@@ -155,11 +155,11 @@ pub mod clay_main {
     }
 
     impl ChildAlignment {
-        fn default() -> Self {
+        pub fn default() -> Self {
             ChildAlignment {x: ChildXAlignment::AlignXLeft, y: ChildYAlignment::AlignYTop}
         }
 
-        fn new(x_align: ChildXAlignment, y_align: ChildYAlignment) -> Self {
+        pub fn new(x_align: ChildXAlignment, y_align: ChildYAlignment) -> Self {
             ChildAlignment {x: x_align, y: y_align}
         }
         
