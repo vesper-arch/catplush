@@ -256,12 +256,12 @@ pub mod clay_main {
 
         // Fixed Sizing
         match current_elements[0].element.layout.sizing.width {
-            SizingMode::Fixed(size) => {current_elements[0].element.final_size_x = size as f32 + current_elements[0].element.layout.padding.left},
+            SizingMode::Fixed(size) => {current_elements[0].element.final_size_x = size + (current_elements[0].element.layout.padding.left as f32)},
             SizingMode::Fit => {},
             SizingMode::Grow => {},
         }
         match current_elements[0].element.layout.sizing.height {
-            SizingMode::Fixed(size) => {current_elements[0].element.final_size_y = size as f32 + current_elements[0].element.layout.padding.top},
+            SizingMode::Fixed(size) => {current_elements[0].element.final_size_y = size + (current_elements[0].element.layout.padding.top as f32)},
             SizingMode::Fit => {},
             SizingMode::Grow => {},
         }
