@@ -2,9 +2,7 @@ pub mod clay_main {
     use std::cmp::max;
 
     // ClayContext is the goddamn backbone of this whole library. It lets functions look at the
-    // current open elements so the UI Heirarchy can be constructed. This will be extended to store
-    // the info of the layout itself but that's a lotta work and i dont give a shit right now.
-    // There should only be a single one of these in existence at any given time. If there are
+    // current open elements so the UI Heirarchy can be constructed. This will be extended to store the info of the layout itself but that's a lotta work and i dont give a shit right now. There should only be a single one of these in existence at any given time. If there are
     // multiple uhh shit's gonna break.
     pub struct ClayContext {
         layout_elements: Vec<Node>,
@@ -57,7 +55,7 @@ pub mod clay_main {
        }
     }
 
-    pub struct Color( pub u8, pub u8, pub u8, pub u8 );
+    pub struct ObjectColor( pub u8, pub u8, pub u8, pub u8 );
 
     #[derive(PartialEq)]
     pub enum ChildLayoutDirection {
@@ -106,6 +104,17 @@ pub mod clay_main {
         }
     }
 
+    pub struct SizeConstraint {
+        min: i32,
+        max: i32
+    }
+
+    impl Default for SizeConstraint {
+        fn default() -> Self {
+            return Self {min: 0, max: 999999999}
+        }
+    }
+
     pub struct CornerRadius {
         pub top_right: f32,
         pub top_left: f32,
@@ -144,7 +153,7 @@ pub mod clay_main {
         }
     }
 
-    pub struct ChildGap(pub f32);
+    pub struct ChildGap(pub i32);
 
     pub enum ChildXAlignment { AlignXLeft, AlignXCenter, AlignXRight }
     pub enum ChildYAlignment { AlignYTop, AlignYCenter, AlignYBottom }
@@ -167,6 +176,7 @@ pub mod clay_main {
 
     pub struct LayoutConfig {
         pub sizing: Sizing,
+        pub size_constraints: (SizeConstraint, SizeConstraint),
         pub padding: Padding,
         pub child_gap: ChildGap,
         pub layout_direction: ChildLayoutDirection,
@@ -177,54 +187,113 @@ pub mod clay_main {
         fn default() -> Self {
             LayoutConfig {
                 sizing: Sizing::both(SizingMode::Fit),
+                size_constraints: (SizeConstraint::default(), SizeConstraint::default()),
                 padding: Padding::all(0),
-                child_gap: ChildGap(0.0),
+                child_gap: ChildGap(0),
                 layout_direction: ChildLayoutDirection::LeftToRight,
                 child_alignment: ChildAlignment::default()
             }
         }
     }
 
-    pub struct ClayElement {
-        pub id: Option<String>,
-        pub layout: LayoutConfig,
-        pub color: Color,
-        pub corner_radius: CornerRadius,
-        // fields for finalized positions and sizes. Not exposed to the user
-        pub final_size_y: f32,
-        pub final_size_x: f32,
-        pub final_pos_x: f32,
-        pub final_pos_y: f32,
-    }
-
-    impl Default for ClayElement {
-        fn default() -> Self {
-            ClayElement {
-                id: None,
-                layout: LayoutConfig::default(),
-                color: Color(0, 0, 0, 255),
-                corner_radius: CornerRadius::all(0.0),
-                final_pos_y: 0.0,
-                final_pos_x: 0.0,
-                final_size_y: 0.0,
-                final_size_x: 0.0,
-            }
-        }
+    pub enum ElementType {
+        Unset,
+        Rectangle,
+        Text ( String, u8 ),
+        Image ( String )
     }
 
     // This is what the user will be working with instead of creating the ClayObject directly.
     // Basic idea is to make this as convenient as possible and then have a function to translate
     // this to the actual ClayObject struct.
-    pub struct ElementDeclaration {
-        pub element_id: Option<String>,
+    pub struct ClayElement {
+        pub object_type: ElementType,
+        pub id: Option<String>,
         pub layout: LayoutConfig,
-        pub background_color: Color,
+
+        pub color: ObjectColor,
         pub corner_radius: CornerRadius,
-        // in the future this will have configs for floating, scroll, border, and custom elements
+
+        pub(crate) final_size_x: f32,
+        pub(crate) final_size_y: f32,
+        pub(crate) final_pos_x: f32,
+        pub(crate) final_pos_y: f32,
     }
 
-    pub fn open_element(context: &mut ClayContext) {
-        let mut new_element = ClayElement::default();
+    impl ClayElement {
+        pub fn new() -> Self {
+            return Self {
+                object_type: ElementType::Unset,
+                id: None,
+                layout: LayoutConfig::default(),
+
+                color: ObjectColor( 0, 0, 0, 0 ),
+                corner_radius: CornerRadius::all(0.0),
+                
+                final_size_x: 0.0,
+                final_size_y: 0.0,
+                final_pos_x: 0.0,
+                final_pos_y: 0.0
+            }
+        }
+        
+
+        pub fn rectangle(mut self, color: ObjectColor, corner_radius: CornerRadius) -> Self {
+            self.object_type = ElementType::Rectangle;
+            self.color = color;
+            self.corner_radius = corner_radius;
+            return self
+        }
+
+        pub fn text(mut self, text: String, color: ObjectColor, font_size: u8) -> Self {
+            self.object_type = ElementType::Text( text, font_size );
+            self.color = color;
+            return self
+        }
+
+        pub fn image(mut self, file: String, corner_radius: CornerRadius) -> Self {
+            self.object_type = ElementType::Image( file );
+            self.corner_radius = corner_radius;
+            return self
+        }
+
+        pub fn child_gap(mut self, amount: i32) -> Self {
+            self.layout.child_gap = ChildGap(amount);
+            return self
+        }
+
+        pub fn padding(mut self, padding: Padding) -> Self {
+            self.layout.padding = padding;
+            return self
+        }
+
+        pub fn sizing(mut self, x: SizingMode, y: SizingMode) -> Self {
+            self.layout.sizing = Sizing{ width: x, height: y };
+            return self
+        }
+
+        pub fn constrain(mut self, width: SizeConstraint, height: SizeConstraint) -> Self {
+            self.layout.size_constraints = (width, height);
+            return self
+        }
+
+        pub fn layout_direction(mut self, direction: ChildLayoutDirection) -> Self {
+            self.layout.layout_direction = direction;
+            return self
+        }
+
+        pub fn alignment(mut self, x_align: ChildXAlignment, y_align: ChildYAlignment) -> Self {
+            self.layout.child_alignment = ChildAlignment{ x: x_align, y: y_align };
+            return self
+        }
+
+        pub fn id(mut self, id: String) -> Self {
+            self.id = Some(id);
+            return self
+        }
+    }
+
+    pub fn open_element(context: &mut ClayContext, element: ClayElement) {
         let new_element_index = context.layout_elements.len();
         let mut parent_element: usize = 0;
         
@@ -234,17 +303,7 @@ pub mod clay_main {
         }
 
         context.open_layout_elements.push(new_element_index);
-        context.layout_elements.push(Node::new(new_element, parent_element));
-    }
-
-    pub fn configure_open_element(context: &mut ClayContext, config: ElementDeclaration) {
-        let last_opened_element_index = *context.open_layout_elements.last().unwrap();
-        let last_opened_element = context.layout_elements.get_mut(last_opened_element_index).unwrap();
-
-        last_opened_element.element.id = config.element_id;
-        last_opened_element.element.color = config.background_color;
-        last_opened_element.element.layout = config.layout;
-        last_opened_element.element.corner_radius = config.corner_radius;
+        context.layout_elements.push(Node::new(element, parent_element));
     }
 
     pub fn close_element(context: &mut ClayContext) {
@@ -308,7 +367,7 @@ pub mod clay_raylib {
         }
     }
 
-    pub fn clay_to_raylib_color(color: &clay_main::Color) -> Color {
+    pub fn clay_to_raylib_color(color: &clay_main::ObjectColor) -> Color {
         Color {
             r: color.0,
             g: color.1,
