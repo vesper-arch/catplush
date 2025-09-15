@@ -432,23 +432,8 @@ pub mod clay_main {
 
 pub mod clay_raylib {
     use raylib::prelude::*;
-    use raylib::consts::ConfigFlags;
-    use raylib::ffi;
     use crate::clay_main;
     use crate::clay_main::{RenderCommand, RenderData};
-
-    pub fn raylib_init(window_size: (i32, i32), title: &str, flags: u32) -> (RaylibHandle, RaylibThread){
-        let (rl, thread) = raylib::init()
-            .size(window_size.0, window_size.1)
-            .title(title)
-            .build();
-
-        unsafe {
-            ffi::SetConfigFlags(flags);
-        }
-
-        return (rl, thread)
-    }
 
     pub fn raylib_render_all(render_commands: Vec<RenderCommand>, draw_handle: &mut RaylibDrawHandle<'_>) {
         for command in render_commands {
