@@ -1,6 +1,10 @@
 pub mod clay_main {
     use std::cmp::max;
 
+    /////////////////////////////////////////////////////////////////
+    //////////////// UI Heirarchy Data Structures ///////////////////
+    /////////////////////////////////////////////////////////////////
+    
     // ClayContext is the goddamn backbone of this whole library. It lets functions look at the
     // current open elements so the UI Heirarchy can be constructed. This will be extended to store the info of the layout itself but that's a lotta work and i dont give a shit right now. There should only be a single one of these in existence at any given time. If there are
     // multiple uhh shit's gonna break.
@@ -55,6 +59,11 @@ pub mod clay_main {
        }
     }
 
+    ///////////////////////////////////////////////////////
+    //////////////// Element Structures ///////////////////
+    ///////////////////////////////////////////////////////
+
+    #[derive(Copy, Clone)]
     pub struct ObjectColor( pub u8, pub u8, pub u8, pub u8 );
 
     #[derive(PartialEq)]
@@ -115,6 +124,7 @@ pub mod clay_main {
         }
     }
 
+    #[derive(Copy, Clone)]
     pub struct CornerRadius {
         pub top_right: f32,
         pub top_left: f32,
@@ -203,12 +213,9 @@ pub mod clay_main {
         Image ( String )
     }
 
-    // This is what the user will be working with instead of creating the ClayObject directly.
-    // Basic idea is to make this as convenient as possible and then have a function to translate
-    // this to the actual ClayObject struct.
     pub struct ClayElement {
         pub object_type: ElementType,
-        pub id: Option<String>,
+        pub id: Option<&'static str>,
         pub layout: LayoutConfig,
 
         pub color: ObjectColor,
@@ -287,10 +294,89 @@ pub mod clay_main {
             return self
         }
 
-        pub fn id(mut self, id: String) -> Self {
+        pub fn id(mut self, id: &'static str) -> Self {
             self.id = Some(id);
             return self
         }
+    }
+
+    //////////////////////////////////////////////////////////
+    ////////////////  Render Structures  /////////////////////
+    //////////////////////////////////////////////////////////
+    
+    #[derive(Copy, Clone)]
+    pub(crate) struct BoundingBox {
+        pub(crate) x: f32,
+        pub(crate) y: f32,
+        pub(crate) width: f32,
+        pub(crate) height: f32
+    }
+
+    pub(crate) struct RectangleRenderData {
+        pub(crate) color: ObjectColor,
+        pub(crate) corner_radius: CornerRadius
+    }
+
+    pub(crate) struct BorderRenderData {
+        pub(crate) color: ObjectColor,
+        pub(crate) corner_radius: CornerRadius,
+        pub(crate) width: i32
+    }
+
+    pub(crate) struct TextRenderData {
+        pub(crate) color: ObjectColor,
+
+        pub(crate) font_size: u8,
+        pub(crate) letter_spacing: u8,
+        pub(crate) line_height: u8
+    }
+
+    pub(crate) struct ImageRenderData {
+        pub(crate) tint: ObjectColor,
+        pub(crate) corner_radius: CornerRadius
+    }
+
+    pub(crate) enum RenderData {
+        NoType,
+        RectangleData(RectangleRenderData),
+        BorderData(BorderRenderData),
+        TextData(TextRenderData),
+        ImageData(ImageRenderData)
+    }
+    
+    pub(crate) struct RenderCommand {
+        pub(crate) bounding_box: BoundingBox,
+
+        pub(crate) render_data: RenderData,
+
+        pub(crate) id: &'static str,
+    }
+
+    pub(crate) fn create_render_commands(context: ClayContext) -> Vec<RenderCommand> {
+        let mut render_commands: Vec<RenderCommand> = vec![];
+        for node in &context.layout_elements {
+            let element = &node.element;
+            let bounding_box = BoundingBox { x: element.final_pos_x, y: element.final_pos_y, width: element.final_size_x, height: element.final_size_y };
+            let render_data = match &element.object_type {
+                ElementType::Unset => RenderData::NoType,
+                ElementType::Rectangle => { RenderData::RectangleData(RectangleRenderData { color: element.color, corner_radius: element.corner_radius }) },
+                ElementType::Text(contents, font_size) => {
+                    RenderData::TextData(TextRenderData { color: element.color, font_size: *font_size, letter_spacing: 0, line_height: 0 })
+                },
+                ElementType::Image(file) => {
+                    RenderData::ImageData(ImageRenderData { tint: element.color, corner_radius: element.corner_radius })
+                }
+            };
+
+            let id = match element.id.clone() {
+                Some(i) => i,
+                _ => ""
+            };
+            
+            render_commands.push( RenderCommand { bounding_box, render_data, id } );
+        }
+
+        return render_commands
     }
 
     pub fn open_element(context: &mut ClayContext, element: ClayElement) {
@@ -346,24 +432,48 @@ pub mod clay_main {
 
 pub mod clay_raylib {
     use raylib::prelude::*;
+    use raylib::consts::ConfigFlags;
+    use raylib::ffi;
     use crate::clay_main;
+    use crate::clay_main::{RenderCommand, RenderData};
 
-    pub fn raylib_init() -> (RaylibHandle, RaylibThread){
+    pub fn raylib_init(window_size: (i32, i32), title: &str, flags: u32) -> (RaylibHandle, RaylibThread){
         let (rl, thread) = raylib::init()
-            .size(640, 480)
-            .title("hell")
-            .resizable()
+            .size(window_size.0, window_size.1)
+            .title(title)
             .build();
+
+        unsafe {
+            ffi::SetConfigFlags(flags);
+        }
 
         return (rl, thread)
     }
 
-    pub fn clay_to_raylib_rect(object: &clay_main::ClayElement) -> Rectangle {
+    pub fn raylib_render_all(render_commands: Vec<RenderCommand>, draw_handle: &mut RaylibDrawHandle<'_>) {
+        for command in render_commands {
+            let bounding_box = command.bounding_box;
+            match command.render_data {
+                RenderData::NoType => {},
+                RenderData::RectangleData(data) => {
+                    if data.corner_radius.top_left != 0.0 {
+                        let radius = (data.corner_radius.top_left * 2.0) / (if bounding_box.width > bounding_box.height { bounding_box.height } else { bounding_box.width });
+                        draw_handle.draw_rectangle_rounded(clay_to_raylib_rect(&bounding_box), radius, 8, clay_to_raylib_color(&data.color));
+                    } else {
+                        draw_handle.draw_rectangle(bounding_box.x as i32, bounding_box.y as i32, bounding_box.width as i32, bounding_box.height as i32, clay_to_raylib_color(&data.color));
+                    }
+                }
+                RenderData::BorderData(_) | RenderData::TextData(_) | RenderData::ImageData(_) => todo!()
+            }
+        }
+    }
+
+    pub fn clay_to_raylib_rect(object: &clay_main::BoundingBox) -> Rectangle {
         Rectangle {
-            x: object.final_pos_x,
-            y: object.final_pos_y,
-            width: object.final_size_x,
-            height: object.final_size_x
+            x: object.x,
+            y: object.y,
+            width: object.width,
+            height: object.height
         }
     }
 
