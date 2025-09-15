@@ -344,12 +344,12 @@ pub mod clay_main {
         ImageData(ImageRenderData)
     }
     
-    pub(crate) struct RenderCommand {
-        pub(crate) bounding_box: BoundingBox,
+    pub struct RenderCommand {
+        pub bounding_box: BoundingBox,
 
-        pub(crate) render_data: RenderData,
+        pub render_data: RenderData,
 
-        pub(crate) id: &'static str,
+        pub id: &'static str,
     }
 
     pub fn create_render_commands(context: ClayContext) -> Vec<RenderCommand> {
