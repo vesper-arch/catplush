@@ -352,7 +352,7 @@ pub mod clay_main {
         pub(crate) id: &'static str,
     }
 
-    pub(crate) fn create_render_commands(context: ClayContext) -> Vec<RenderCommand> {
+    pub fn create_render_commands(context: ClayContext) -> Vec<RenderCommand> {
         let mut render_commands: Vec<RenderCommand> = vec![];
         for node in &context.layout_elements {
             let element = &node.element;
