@@ -5,9 +5,8 @@ pub mod clay_main {
     //////////////// UI Heirarchy Data Structures ///////////////////
     /////////////////////////////////////////////////////////////////
     
-    // ClayContext is the goddamn backbone of this whole library. It lets functions look at the
-    // current open elements so the UI Heirarchy can be constructed and laid out. This will be extended to store the info of the layout itself but that's a lotta work and i dont give a shit right now. There should only be a single one of these in existence at any given time. If there are
-    // multiple uhh shit's gonna break.
+    // Holds all of the layout information and currently opened elements for building the ui
+    // heirarchy
     pub struct ClayContext {
         layout_elements: Vec<Node>,
 
@@ -365,6 +364,10 @@ pub mod clay_main {
         pub id: &'static str,
     }
 
+    //////////// Finalizing Functions //////////////
+
+    // Solves all sizing and positioning and returns a set of render commands for passing to the
+    // renderer
     pub fn end_layout(mut context: ClayContext) -> Vec<RenderCommand> {
         context.open_layout_elements.clear();
 
@@ -393,6 +396,8 @@ pub mod clay_main {
 
         return render_commands
     }
+
+    //////////// Layout Building Functions //////////////
 
     pub fn open_element(context: &mut ClayContext, element: ClayElement) {
         let new_element_index = context.layout_elements.len();
