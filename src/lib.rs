@@ -15,7 +15,7 @@ pub mod clay_main {
     }
 
     impl ClayContext {
-        fn begin_layout(window_size: (i32, i32), layout_direction: ChildLayoutDirection) -> Self {
+        pub fn begin_layout(window_size: (i32, i32), layout_direction: ChildLayoutDirection) -> Self {
             let mut new_context = ClayContext {
                 layout_elements: vec![Node {parent: None, 
                     element: ClayElement::new()
