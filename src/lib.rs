@@ -365,7 +365,7 @@ pub mod clay_main {
         pub id: &'static str,
     }
 
-    pub fn create_render_commands(mut context: ClayContext) -> Vec<RenderCommand> {
+    pub fn end_layout(mut context: ClayContext) -> Vec<RenderCommand> {
         context.open_layout_elements.clear();
 
         let mut render_commands: Vec<RenderCommand> = vec![];
@@ -408,6 +408,8 @@ pub mod clay_main {
     }
 
     pub fn close_element(context: &mut ClayContext) {
+        // Naturally gets called in Depth First Order so we can do fixed sizing and fit sizing
+        // widths right here
         if context.open_layout_elements.len() <= 1 {
             return
         }
@@ -417,6 +419,10 @@ pub mod clay_main {
         let parent_element = layout_slice[last_opened_element].parent.unwrap();
         // index 0: parent node | index 1: last opened node (the one being closed)
         let current_elements = layout_slice.get_disjoint_mut([parent_element, last_opened_element]).unwrap();
+
+        // Padding
+        current_elements[1].element.final_size_x += (current_elements[1].element.layout.padding.left + current_elements[1].element.layout.padding.right) as f32;
+        current_elements[1].element.final_size_y += (current_elements[1].element.layout.padding.top + current_elements[1].element.layout.padding.bottom) as f32;
 
         // Fixed Sizing
         match current_elements[1].element.layout.sizing.width {
@@ -473,7 +479,7 @@ pub mod clay_raylib {
         }
     }
 
-    pub fn clay_to_raylib_rect(object: &clay_main::BoundingBox) -> Rectangle {
+    pub(crate) fn clay_to_raylib_rect(object: &clay_main::BoundingBox) -> Rectangle {
         Rectangle {
             x: object.x,
             y: object.y,
