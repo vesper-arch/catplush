@@ -15,6 +15,21 @@ pub mod clay_main {
     }
 
     impl ClayContext {
+        fn begin_layout(window_size: (i32, i32), layout_direction: ChildLayoutDirection) -> Self {
+            let mut new_context = ClayContext {
+                layout_elements: vec![Node {parent: None, 
+                    element: ClayElement::new()
+                        .sizing(SizingMode::Fixed(window_size.0), SizingMode::Fixed(window_size.1))
+                        .layout_direction(layout_direction),
+                    child_elements: vec![]
+                }],
+
+                open_layout_elements: vec![0]
+            };
+
+            new_context
+        }
+
         fn get_last_opened_element(&mut self) -> Option<&mut Node> {
             let last_opened_element_index: usize = *self.open_layout_elements.last().expect("There are no currently opened elements");
             
@@ -352,7 +367,9 @@ pub mod clay_main {
         pub id: &'static str,
     }
 
-    pub fn create_render_commands(context: ClayContext) -> Vec<RenderCommand> {
+    pub fn create_render_commands(mut context: ClayContext) -> Vec<RenderCommand> {
+        context.open_layout_elements.clear();
+
         let mut render_commands: Vec<RenderCommand> = vec![];
         for node in &context.layout_elements {
             let element = &node.element;
@@ -393,6 +410,10 @@ pub mod clay_main {
     }
 
     pub fn close_element(context: &mut ClayContext) {
+        if context.open_layout_elements.len() >= 1 {
+            return
+        }
+
         let layout_slice = &mut context.layout_elements[..];
         let last_opened_element = *context.open_layout_elements.last().unwrap();
         let parent_element = layout_slice[last_opened_element].parent.unwrap();
