@@ -18,7 +18,7 @@ pub mod clay_main {
         pub fn begin_layout(window_size: (i32, i32), layout_direction: ChildLayoutDirection) -> Self {
             let mut new_context = ClayContext {
                 layout_elements: vec![],
-                open_layout_elements: vec![0]
+                open_layout_elements: vec![]
             };
 
             open_element(&mut new_context, ClayElement::new()
