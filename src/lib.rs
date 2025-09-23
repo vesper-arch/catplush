@@ -1,5 +1,4 @@
 pub mod clay_main {
-    use std::cmp::max;
 
     /////////////////////////////////////////////////////////////////
     //////////////// UI Heirarchy Data Structures ///////////////////
@@ -369,7 +368,7 @@ pub mod clay_main {
         context.open_layout_elements.clear();
 
         let mut render_commands: Vec<RenderCommand> = vec![];
-        for node in &context.layout_elements {
+        for node in &context.layout_elements[1..context.layout_elements.len()] {
             let element = &node.element;
             let bounding_box = BoundingBox { x: element.final_pos_x, y: element.final_pos_y, width: element.final_size_x, height: element.final_size_y };
             let render_data = match &element.object_type {
