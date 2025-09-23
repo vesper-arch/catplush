@@ -6,7 +6,7 @@ pub mod clay_main {
     /////////////////////////////////////////////////////////////////
     
     // ClayContext is the goddamn backbone of this whole library. It lets functions look at the
-    // current open elements so the UI Heirarchy can be constructed. This will be extended to store the info of the layout itself but that's a lotta work and i dont give a shit right now. There should only be a single one of these in existence at any given time. If there are
+    // current open elements so the UI Heirarchy can be constructed and laid out. This will be extended to store the info of the layout itself but that's a lotta work and i dont give a shit right now. There should only be a single one of these in existence at any given time. If there are
     // multiple uhh shit's gonna break.
     pub struct ClayContext {
         layout_elements: Vec<Node>,
@@ -395,36 +395,30 @@ pub mod clay_main {
     pub fn close_element(context: &mut ClayContext) {
         let layout_slice = &mut context.layout_elements[..];
         let last_opened_element = *context.open_layout_elements.last().unwrap();
-        // let parent_element = layout_slice[last_opened_element].parent.unwrap();
-        // index 0: parent node | index 1: last opened node
-        let current_elements = layout_slice.get_disjoint_mut([last_opened_element]).unwrap();
+        let parent_element = layout_slice[last_opened_element].parent.unwrap();
+        // index 0: parent node | index 1: last opened node (the one being closed)
+        let current_elements = layout_slice.get_disjoint_mut([parent_element, last_opened_element]).unwrap();
 
         // Fixed Sizing
-        match current_elements[0].element.layout.sizing.width {
-            SizingMode::Fixed(size) => {current_elements[0].element.final_size_x = size as f32},
+        match current_elements[1].element.layout.sizing.width {
+            SizingMode::Fixed(size) => {current_elements[1].element.final_size_x = size as f32},
             SizingMode::Fit => {},
             SizingMode::Grow => {},
         }
-        match current_elements[0].element.layout.sizing.height {
-            SizingMode::Fixed(size) => {current_elements[0].element.final_size_y = size as f32},
+        match current_elements[1].element.layout.sizing.height {
+            SizingMode::Fixed(size) => {current_elements[1].element.final_size_y = size as f32},
             SizingMode::Fit => {},
             SizingMode::Grow => {},
         }
+
         // Fit Sizing
-        // if current_elements[0].element.layout.sizing.width == SizingMode::Fit {
-        //     if current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
-        //         current_elements[0].element.final_size_x += current_elements[1].element.layout.sizing.width.get_as_float();
-        //
-        //         current_elements[0].element.final_size_y = max(current_elements[0].element.final_size_y as i32, current_elements[1].element.layout.sizing.height.get_as_int()) as f32;
-        //     } else {
-        //         current_elements[0].element.final_size_y += current_elements[1].element.layout.sizing.height.get_as_float();
-        //
-        //         current_elements[0].element.final_size_x = max(current_elements[0].element.final_size_x as i32, current_elements[1].element.layout.sizing.width.get_as_int()) as f32;
-        //     }
-        //
-        //     current_elements[0].element.final_size_x += (current_elements[0].element.layout.padding.left + current_elements[0].element.layout.padding.right) as f32;
-        //     current_elements[0].element.final_size_y += (current_elements[0].element.layout.padding.top + current_elements[0].element.layout.padding.bottom) as f32;
-        // }
+        if current_elements[0].element.layout.sizing.width == SizingMode::Fit && current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+            match current_elements[1].element.layout.sizing.width {
+                SizingMode::Fixed(size) => {current_elements[0].element.final_size_x += size as f32 },
+                SizingMode::Fit => {},
+                SizingMode::Grow => {}
+            }
+        }
 
         context.open_layout_elements.pop();
     }
