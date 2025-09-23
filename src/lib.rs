@@ -17,15 +17,13 @@ pub mod clay_main {
     impl ClayContext {
         pub fn begin_layout(window_size: (i32, i32), layout_direction: ChildLayoutDirection) -> Self {
             let mut new_context = ClayContext {
-                layout_elements: vec![Node {parent: None, 
-                    element: ClayElement::new()
-                        .sizing(SizingMode::Fixed(window_size.0), SizingMode::Fixed(window_size.1))
-                        .layout_direction(layout_direction),
-                    child_elements: vec![]
-                }],
-
+                layout_elements: vec![],
                 open_layout_elements: vec![0]
             };
+
+            open_element(&mut new_context, ClayElement::new()
+                .sizing(SizingMode::Fixed(window_size.0), SizingMode::Fixed(window_size.1))
+                .layout_direction(layout_direction));
 
             new_context
         }
