@@ -438,6 +438,13 @@ pub mod clay_main {
                 SizingMode::Grow => {}
             }
         }
+        if current_elements[0].element.layout.sizing.height == SizingMode::Fit && current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+            match current_elements[1].element.layout.sizing.height {
+                SizingMode::Fixed(size) => {current_elements[0].element.final_size_y += size as f32 },
+                SizingMode::Fit => {},
+                SizingMode::Grow => {}
+            }
+        }
 
         context.open_layout_elements.pop();
     }
