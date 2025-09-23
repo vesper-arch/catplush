@@ -1,4 +1,5 @@
 pub mod clay_main {
+    use log::{info, warn};
 
     /////////////////////////////////////////////////////////////////
     //////////////// UI Heirarchy Data Structures ///////////////////
@@ -407,7 +408,7 @@ pub mod clay_main {
     }
 
     pub fn close_element(context: &mut ClayContext) {
-        if context.open_layout_elements.len() >= 1 {
+        if context.open_layout_elements.len() <= 1 {
             return
         }
 
