@@ -221,6 +221,7 @@ pub mod clay_main {
     pub enum ElementType {
         Unset,
         Rectangle,
+        Border ( i32 ),
         Text ( String, u8 ),
         Image ( String )
     }
@@ -259,6 +260,13 @@ pub mod clay_main {
 
         pub fn rectangle(mut self, color: ObjectColor, corner_radius: CornerRadius) -> Self {
             self.object_type = ElementType::Rectangle;
+            self.color = color;
+            self.corner_radius = corner_radius;
+            return self
+        }
+
+        pub fn border(mut self, color: ObjectColor, corner_radius: CornerRadius, border_width: i32) -> Self {
+            self.object_type = ElementType::Border(border_width);
             self.color = color;
             self.corner_radius = corner_radius;
             return self
@@ -371,6 +379,8 @@ pub mod clay_main {
     pub fn end_layout(mut context: ClayContext) -> Vec<RenderCommand> {
         context.open_layout_elements.clear();
 
+        size_layout_widths(&mut context, 0, &ChildLayoutDirection::LeftToRight);
+
         let mut render_commands: Vec<RenderCommand> = vec![];
         for node in &context.layout_elements[1..context.layout_elements.len()] {
             let element = &node.element;
@@ -378,6 +388,7 @@ pub mod clay_main {
             let render_data = match &element.object_type {
                 ElementType::Unset => RenderData::NoType,
                 ElementType::Rectangle => { RenderData::RectangleData(RectangleRenderData { color: element.color, corner_radius: element.corner_radius }) },
+                ElementType::Border(width) => { RenderData::BorderData(BorderRenderData { color: element.color, corner_radius: element.corner_radius, width: *width }) }
                 ElementType::Text(contents, font_size) => {
                     RenderData::TextData(TextRenderData { color: element.color, font_size: *font_size, letter_spacing: 0, line_height: 0 })
                 },
@@ -459,6 +470,13 @@ pub mod clay_main {
 
         context.open_layout_elements.pop();
     }
+
+    pub(crate) fn size_layout_widths(context: &mut ClayContext, current_element: usize, layout_direction: &ChildLayoutDirection) {
+        for child in context.layout_elements[current_element].child_elements.clone() {
+            size_layout_widths(context, child, layout_direction);
+        }
+
+    }
 }
 
 pub mod clay_raylib {
@@ -479,7 +497,16 @@ pub mod clay_raylib {
                         draw_handle.draw_rectangle(bounding_box.x as i32, bounding_box.y as i32, bounding_box.width as i32, bounding_box.height as i32, clay_to_raylib_color(&data.color));
                     }
                 }
-                RenderData::BorderData(_) | RenderData::TextData(_) | RenderData::ImageData(_) => todo!()
+                RenderData::BorderData(data) => {
+                    if data.corner_radius.top_left != 0.0 {
+                        let radius = (data.corner_radius.top_left * 2.0) / (if bounding_box.width > bounding_box.height { bounding_box.height } else { bounding_box.width });
+                        draw_handle.draw_rectangle_rounded_lines_ex(clay_to_raylib_rect(&bounding_box), radius, 8, data.width as f32, clay_to_raylib_color(&data.color));
+                    } else {
+                        draw_handle.draw_rectangle_lines_ex(clay_to_raylib_rect(&bounding_box), data.width as f32, clay_to_raylib_color(&data.color));
+                    }
+                }
+                // not even sure how to handle text and images yet
+                RenderData::TextData(_) | RenderData::ImageData(_) => todo!()
             }
         }
     }
