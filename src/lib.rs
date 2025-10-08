@@ -504,7 +504,7 @@ pub mod clay_main {
                 }
             }
 
-            total_child_width += context.layout_elements[child].element.final_size_x;
+            total_child_width += context.layout_elements[child].element.final_pos_x;
             child_num += 1;
         }
 
@@ -532,7 +532,7 @@ pub mod clay_main {
                 }
             }
 
-            total_child_height += context.layout_elements[child].element.final_size_y;
+            total_child_height += context.layout_elements[child].element.final_pos_y;
             child_num += 1;
         }
 
