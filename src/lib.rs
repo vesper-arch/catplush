@@ -1,4 +1,6 @@
 pub mod clay_main {
+    use std::thread::current;
+
     use log::{info, warn};
 
     /////////////////////////////////////////////////////////////////
@@ -381,6 +383,8 @@ pub mod clay_main {
 
         size_layout_widths(&mut context, 0, &ChildLayoutDirection::LeftToRight);
 
+        position_all(&mut context, &ChildLayoutDirection::LeftToRight);
+
         let mut render_commands: Vec<RenderCommand> = vec![];
         for node in &context.layout_elements[1..context.layout_elements.len()] {
             let element = &node.element;
@@ -475,7 +479,68 @@ pub mod clay_main {
         for child in context.layout_elements[current_element].child_elements.clone() {
             size_layout_widths(context, child, layout_direction);
         }
+    }
 
+    pub(crate) fn position_all(context: &mut ClayContext, layout_direction: &ChildLayoutDirection) {
+        position_along_x(context, 0, layout_direction);
+        position_along_y(context, 0, layout_direction);
+    }
+
+    pub(crate) fn position_along_x(context: &mut ClayContext, current_element: usize, layout_direction: &ChildLayoutDirection) {
+        let mut child_num = 1;
+        let mut total_child_width = 0.0;
+
+        for child in context.layout_elements[current_element].child_elements.clone() {
+            total_child_width += context.layout_elements[child].element.final_size_x;
+
+            match context.layout_elements[current_element].element.layout.layout_direction {
+                ChildLayoutDirection::LeftToRight => {
+                    context.layout_elements[child].element.final_pos_x = context.layout_elements[current_element].element.final_pos_x
+                        + total_child_width
+                        + context.layout_elements[current_element].element.layout.padding.left as f32
+                        + (context.layout_elements[current_element].element.layout.child_gap.0 * (child_num - 1)) as f32;
+                }
+                ChildLayoutDirection::TopToBottom => {
+                    context.layout_elements[child].element.final_pos_x = context.layout_elements[current_element].element.final_pos_x
+                        + context.layout_elements[current_element].element.layout.padding.left as f32
+                }
+            }
+
+            child_num += 1;
+        }
+
+        for child in context.layout_elements[current_element].child_elements.clone() {
+            position_along_x(context, child, layout_direction);
+        }
+    }
+
+
+    pub(crate) fn position_along_y(context: &mut ClayContext, current_element: usize, layout_direction: &ChildLayoutDirection) {
+        let mut child_num = 1;
+        let mut total_child_height = 0.0;
+
+        for child in context.layout_elements[current_element].child_elements.clone() {
+            total_child_height += context.layout_elements[child].element.final_size_y;
+
+            match context.layout_elements[current_element].element.layout.layout_direction {
+                ChildLayoutDirection::LeftToRight => {
+                    context.layout_elements[child].element.final_pos_y = context.layout_elements[current_element].element.final_pos_y
+                        + context.layout_elements[current_element].element.layout.padding.top as f32
+                }
+                ChildLayoutDirection::TopToBottom => {
+                    context.layout_elements[child].element.final_pos_y = context.layout_elements[current_element].element.final_pos_y
+                        + total_child_height
+                        + context.layout_elements[current_element].element.layout.padding.top as f32
+                        + (context.layout_elements[current_element].element.layout.child_gap.0 * (child_num - 1)) as f32;
+                }
+            }
+
+            child_num += 1;
+        }
+
+        for child in context.layout_elements[current_element].child_elements.clone() {
+            position_along_y(context, child, layout_direction);
+        }
     }
 }
 
