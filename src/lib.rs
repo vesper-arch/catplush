@@ -491,8 +491,6 @@ pub mod clay_main {
         let mut total_child_width = 0.0;
 
         for child in context.layout_elements[current_element].child_elements.clone() {
-            total_child_width += context.layout_elements[child].element.final_size_x;
-
             match context.layout_elements[current_element].element.layout.layout_direction {
                 ChildLayoutDirection::LeftToRight => {
                     context.layout_elements[child].element.final_pos_x = context.layout_elements[current_element].element.final_pos_x
@@ -506,6 +504,7 @@ pub mod clay_main {
                 }
             }
 
+            total_child_width += context.layout_elements[child].element.final_size_x;
             child_num += 1;
         }
 
@@ -520,8 +519,6 @@ pub mod clay_main {
         let mut total_child_height = 0.0;
 
         for child in context.layout_elements[current_element].child_elements.clone() {
-            total_child_height += context.layout_elements[child].element.final_size_y;
-
             match context.layout_elements[current_element].element.layout.layout_direction {
                 ChildLayoutDirection::LeftToRight => {
                     context.layout_elements[child].element.final_pos_y = context.layout_elements[current_element].element.final_pos_y
@@ -535,6 +532,7 @@ pub mod clay_main {
                 }
             }
 
+            total_child_height += context.layout_elements[child].element.final_size_y;
             child_num += 1;
         }
 
