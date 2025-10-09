@@ -477,7 +477,7 @@ pub mod clay_main {
                 }
             } else {
                 match current_elements[1].element.layout.sizing.height {
-                    SizingMode::Fixed(size) => {current_elements[0].element.final_size_y += size as f32 },
+                    SizingMode::Fixed(size) => {current_elements[0].element.final_size_y = f32::max(size as f32, current_elements[0].element.final_size_y) },
                     SizingMode::Fit => {},
                     SizingMode::Grow => {}
                 }
