@@ -1,8 +1,4 @@
 pub mod clay_main {
-    use std::thread::current;
-
-    use log::{info, warn};
-
     /////////////////////////////////////////////////////////////////
     //////////////// UI Heirarchy Data Structures ///////////////////
     /////////////////////////////////////////////////////////////////
@@ -457,18 +453,34 @@ pub mod clay_main {
         }
 
         // Fit Sizing
-        if current_elements[0].element.layout.sizing.width == SizingMode::Fit && current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
-            match current_elements[1].element.layout.sizing.width {
-                SizingMode::Fixed(size) => {current_elements[0].element.final_size_x += size as f32 },
-                SizingMode::Fit => {},
-                SizingMode::Grow => {}
+        if current_elements[0].element.layout.sizing.width == SizingMode::Fit {
+            if current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+                match current_elements[1].element.layout.sizing.width {
+                    SizingMode::Fixed(size) => {current_elements[0].element.final_size_x += size as f32 },
+                    SizingMode::Fit => {},
+                    SizingMode::Grow => {}
+                }
+            } else {
+                match current_elements[1].element.layout.sizing.width {
+                    SizingMode::Fixed(size) => {current_elements[0].element.final_size_x = f32::max(size as f32, current_elements[0].element.final_size_x) },
+                    SizingMode::Fit => {},
+                    SizingMode::Grow => {}
+                }
             }
         }
-        if current_elements[0].element.layout.sizing.height == SizingMode::Fit && current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
-            match current_elements[1].element.layout.sizing.height {
-                SizingMode::Fixed(size) => {current_elements[0].element.final_size_y += size as f32 },
-                SizingMode::Fit => {},
-                SizingMode::Grow => {}
+        if current_elements[0].element.layout.sizing.height == SizingMode::Fit {
+            if current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+                match current_elements[1].element.layout.sizing.height {
+                    SizingMode::Fixed(size) => {current_elements[0].element.final_size_y += size as f32 },
+                    SizingMode::Fit => {},
+                    SizingMode::Grow => {}
+                }
+            } else {
+                match current_elements[1].element.layout.sizing.height {
+                    SizingMode::Fixed(size) => {current_elements[0].element.final_size_y += size as f32 },
+                    SizingMode::Fit => {},
+                    SizingMode::Grow => {}
+                }
             }
         }
 
