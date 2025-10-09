@@ -500,13 +500,13 @@ pub mod clay_main {
 
     pub(crate) fn position_along_x(context: &mut ClayContext, current_element: usize, layout_direction: &ChildLayoutDirection) {
         let mut child_num = 1;
-        let mut total_child_width = 0.0;
+        let mut total_child_x_offset = 0.0;
 
         for child in context.layout_elements[current_element].child_elements.clone() {
             match context.layout_elements[current_element].element.layout.layout_direction {
                 ChildLayoutDirection::LeftToRight => {
                     context.layout_elements[child].element.final_pos_x = context.layout_elements[current_element].element.final_pos_x
-                        + total_child_width
+                        + total_child_x_offset
                         + context.layout_elements[current_element].element.layout.padding.left as f32
                         + (context.layout_elements[current_element].element.layout.child_gap.0 * (child_num - 1)) as f32;
                 }
@@ -516,7 +516,7 @@ pub mod clay_main {
                 }
             }
 
-            total_child_width += context.layout_elements[child].element.final_pos_x;
+            total_child_x_offset += context.layout_elements[child].element.final_size_x;
             child_num += 1;
         }
 
@@ -528,7 +528,7 @@ pub mod clay_main {
 
     pub(crate) fn position_along_y(context: &mut ClayContext, current_element: usize, layout_direction: &ChildLayoutDirection) {
         let mut child_num = 1;
-        let mut total_child_height = 0.0;
+        let mut total_child_y_offset = 0.0;
 
         for child in context.layout_elements[current_element].child_elements.clone() {
             match context.layout_elements[current_element].element.layout.layout_direction {
@@ -538,13 +538,13 @@ pub mod clay_main {
                 }
                 ChildLayoutDirection::TopToBottom => {
                     context.layout_elements[child].element.final_pos_y = context.layout_elements[current_element].element.final_pos_y
-                        + total_child_height
+                        + total_child_y_offset
                         + context.layout_elements[current_element].element.layout.padding.top as f32
                         + (context.layout_elements[current_element].element.layout.child_gap.0 * (child_num - 1)) as f32;
                 }
             }
 
-            total_child_height += context.layout_elements[child].element.final_pos_y;
+            total_child_y_offset += context.layout_elements[child].element.final_size_y;
             child_num += 1;
         }
 
