@@ -460,6 +460,7 @@ pub mod clay_main {
                     SizingMode::Fit => {},
                     SizingMode::Grow => {}
                 }
+                current_elements[0].element.final_size_x += (current_elements[0].element.layout.child_gap.0 * (current_elements[0].child_elements.len() as i32 - 1)) as f32
             } else {
                 match current_elements[1].element.layout.sizing.width {
                     SizingMode::Fixed(_) => {current_elements[0].element.final_size_x = f32::max(current_elements[1].element.final_size_x, current_elements[0].element.final_size_x) },
@@ -467,6 +468,7 @@ pub mod clay_main {
                     SizingMode::Grow => {}
                 }
             }
+
         }
         if current_elements[0].element.layout.sizing.height == SizingMode::Fit {
             if current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
@@ -481,6 +483,7 @@ pub mod clay_main {
                     SizingMode::Fit => {},
                     SizingMode::Grow => {}
                 }
+                current_elements[0].element.final_size_y += (current_elements[0].element.layout.child_gap.0 * (current_elements[0].child_elements.len() as i32 - 1)) as f32
             }
         }
 
