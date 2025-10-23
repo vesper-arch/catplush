@@ -451,7 +451,7 @@ pub mod clay_main {
         }
 
         // Fit Sizing
-        if current_elements[0].element.layout.sizing.height == SizingMode::Fit || current_elements[0].element.layout.sizing.height == SizingMode::Grow {
+        if current_elements[0].element.layout.sizing.width == SizingMode::Fit || current_elements[0].element.layout.sizing.width == SizingMode::Grow {
             if current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
                 current_elements[0].element.final_size_x += current_elements[1].element.final_size_x;
             } else {
@@ -468,11 +468,17 @@ pub mod clay_main {
         }
 
         // Child Gap
-        if current_elements[1].element.layout.sizing.height == SizingMode::Fit || current_elements[1].element.layout.sizing.height == SizingMode::Grow {
+        if current_elements[1].element.layout.sizing.width == SizingMode::Fit || current_elements[1].element.layout.sizing.width == SizingMode::Grow {
             match current_elements[1].element.layout.layout_direction {
                 ChildLayoutDirection::LeftToRight => {
                     current_elements[1].element.final_size_x += (current_elements[1].element.layout.child_gap * (current_elements[1].child_elements.len() as i32 - 1)) as f32
                 }
+                ChildLayoutDirection::TopToBottom => {}
+            }
+        }
+        if current_elements[1].element.layout.sizing.height == SizingMode::Fit || current_elements[1].element.layout.sizing.height == SizingMode::Grow {
+            match current_elements[1].element.layout.layout_direction {
+                ChildLayoutDirection::LeftToRight => {}
                 ChildLayoutDirection::TopToBottom => {
                     current_elements[1].element.final_size_y += (current_elements[1].element.layout.child_gap * (current_elements[1].child_elements.len() as i32 - 1)) as f32
                 }
