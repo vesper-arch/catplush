@@ -501,7 +501,7 @@ pub mod clay_main {
                 }
                 ChildLayoutDirection::TopToBottom => {
                     context.layout_elements[child].element.final_pos_x = context.layout_elements[current_element].element.final_pos_x
-                        + context.layout_elements[current_element].element.layout.padding.left as f32
+                        + context.layout_elements[current_element].element.layout.padding.left as f32;
                 }
             }
 
@@ -523,7 +523,7 @@ pub mod clay_main {
             match context.layout_elements[current_element].element.layout.layout_direction {
                 ChildLayoutDirection::LeftToRight => {
                     context.layout_elements[child].element.final_pos_y = context.layout_elements[current_element].element.final_pos_y
-                        + context.layout_elements[current_element].element.layout.padding.top as f32
+                        + context.layout_elements[current_element].element.layout.padding.top as f32;
                 }
                 ChildLayoutDirection::TopToBottom => {
                     context.layout_elements[child].element.final_pos_y = total_child_y_offset
