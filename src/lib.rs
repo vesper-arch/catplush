@@ -456,8 +456,6 @@ pub mod clay_main {
         if current_elements[0].element.layout.sizing.height == SizingMode::Fit || current_elements[0].element.layout.sizing.height == SizingMode::Grow {
             if current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
                 current_elements[0].element.final_size_x += current_elements[1].element.final_size_x;
-
-                current_elements[0].element.final_size_x += (current_elements[0].element.layout.child_gap.0 * (current_elements[0].child_elements.len() as i32 - 1)) as f32
             } else {
                 current_elements[0].element.final_size_x = f32::max(current_elements[1].element.final_size_x, current_elements[0].element.final_size_x)
             }
@@ -468,8 +466,18 @@ pub mod clay_main {
                 current_elements[0].element.final_size_y = f32::max(current_elements[1].element.final_size_y, current_elements[0].element.final_size_y);
             } else {
                 current_elements[0].element.final_size_y += current_elements[1].element.final_size_y;
+            }
+        }
 
-                current_elements[0].element.final_size_y += (current_elements[0].element.layout.child_gap.0 * (current_elements[0].child_elements.len() as i32 - 1)) as f32
+        // Child Gap
+        if current_elements[1].element.layout.sizing.height == SizingMode::Fit || current_elements[1].element.layout.sizing.height == SizingMode::Grow {
+            match current_elements[1].element.layout.layout_direction {
+                ChildLayoutDirection::LeftToRight => {
+                    current_elements[1].element.final_size_x += (current_elements[0].element.layout.child_gap.0 * (current_elements[0].child_elements.len() as i32 - 1)) as f32
+                }
+                ChildLayoutDirection::TopToBottom => {
+                    current_elements[1].element.final_size_y += (current_elements[0].element.layout.child_gap.0 * (current_elements[0].child_elements.len() as i32 - 1)) as f32
+                }
             }
         }
 
