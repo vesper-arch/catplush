@@ -173,8 +173,6 @@ pub mod clay_main {
         }
     }
 
-    pub struct ChildGap(pub i32);
-
     pub enum ChildXAlignment { AlignXLeft, AlignXCenter, AlignXRight }
     pub enum ChildYAlignment { AlignYTop, AlignYCenter, AlignYBottom }
 
@@ -198,7 +196,7 @@ pub mod clay_main {
         pub sizing: Sizing,
         pub size_constraints: (SizeConstraint, SizeConstraint),
         pub padding: Padding,
-        pub child_gap: ChildGap,
+        pub child_gap: i32,
         pub layout_direction: ChildLayoutDirection,
         pub child_alignment: ChildAlignment
     }
@@ -209,7 +207,7 @@ pub mod clay_main {
                 sizing: Sizing::both(SizingMode::Fit),
                 size_constraints: (SizeConstraint::default(), SizeConstraint::default()),
                 padding: Padding::all(0),
-                child_gap: ChildGap(0),
+                child_gap: 0,
                 layout_direction: ChildLayoutDirection::LeftToRight,
                 child_alignment: ChildAlignment::default()
             }
@@ -283,7 +281,7 @@ pub mod clay_main {
         }
 
         pub fn child_gap(mut self, amount: i32) -> Self {
-            self.layout.child_gap = ChildGap(amount);
+            self.layout.child_gap = amount;
             return self
         }
 
@@ -473,10 +471,10 @@ pub mod clay_main {
         if current_elements[1].element.layout.sizing.height == SizingMode::Fit || current_elements[1].element.layout.sizing.height == SizingMode::Grow {
             match current_elements[1].element.layout.layout_direction {
                 ChildLayoutDirection::LeftToRight => {
-                    current_elements[1].element.final_size_x += (current_elements[1].element.layout.child_gap.0 * (current_elements[1].child_elements.len() as i32 - 1)) as f32
+                    current_elements[1].element.final_size_x += (current_elements[1].element.layout.child_gap * (current_elements[1].child_elements.len() as i32 - 1)) as f32
                 }
                 ChildLayoutDirection::TopToBottom => {
-                    current_elements[1].element.final_size_y += (current_elements[1].element.layout.child_gap.0 * (current_elements[1].child_elements.len() as i32 - 1)) as f32
+                    current_elements[1].element.final_size_y += (current_elements[1].element.layout.child_gap * (current_elements[1].child_elements.len() as i32 - 1)) as f32
                 }
             }
         }
@@ -505,7 +503,7 @@ pub mod clay_main {
                     context.layout_elements[child].element.final_pos_x = total_child_x_offset
                         + context.layout_elements[current_element].element.final_pos_x
                         + context.layout_elements[current_element].element.layout.padding.left as f32
-                        + (context.layout_elements[current_element].element.layout.child_gap.0 * (child_num - 1)) as f32;
+                        + (context.layout_elements[current_element].element.layout.child_gap * (child_num - 1)) as f32;
                 }
                 ChildLayoutDirection::TopToBottom => {
                     context.layout_elements[child].element.final_pos_x = context.layout_elements[current_element].element.final_pos_x
@@ -537,7 +535,7 @@ pub mod clay_main {
                     context.layout_elements[child].element.final_pos_y = total_child_y_offset
                         + context.layout_elements[current_element].element.final_pos_y
                         + context.layout_elements[current_element].element.layout.padding.top as f32
-                        + (context.layout_elements[current_element].element.layout.child_gap.0 * (child_num - 1)) as f32;
+                        + (context.layout_elements[current_element].element.layout.child_gap * (child_num - 1)) as f32;
                 }
             }
 
