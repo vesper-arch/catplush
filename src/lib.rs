@@ -470,6 +470,8 @@ pub mod clay_main {
                 current_elements[0].element.final_size_y += current_elements[1].element.final_size_y;
             }
         }
+
+        context.open_layout_elements.pop();
     }
 
 
