@@ -450,9 +450,12 @@ pub mod clay_main {
             SizingMode::Grow => {},
         }
 
+        let child_gap = (current_elements[0].child_elements.len() as i32 - 1) * current_elements[0].element.layout.child_gap;
+
         // Fit Sizing
         if current_elements[0].element.layout.sizing.width == SizingMode::Fit || current_elements[0].element.layout.sizing.width == SizingMode::Grow {
             if current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+                current_elements[0].element.final_size_x += child_gap as f32;
                 current_elements[0].element.final_size_x += current_elements[1].element.final_size_x;
             } else {
                 current_elements[0].element.final_size_x = f32::max(current_elements[1].element.final_size_x, current_elements[0].element.final_size_x)
@@ -463,30 +466,12 @@ pub mod clay_main {
             if current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
                 current_elements[0].element.final_size_y = f32::max(current_elements[1].element.final_size_y, current_elements[0].element.final_size_y);
             } else {
+                current_elements[0].element.final_size_y += child_gap as f32;
                 current_elements[0].element.final_size_y += current_elements[1].element.final_size_y;
             }
         }
-
-        // Child Gap
-        if current_elements[1].element.layout.sizing.width == SizingMode::Fit || current_elements[1].element.layout.sizing.width == SizingMode::Grow {
-            match current_elements[1].element.layout.layout_direction {
-                ChildLayoutDirection::LeftToRight => {
-                    current_elements[1].element.final_size_x += (current_elements[1].element.layout.child_gap * (current_elements[1].child_elements.len() as i32 - 1)) as f32
-                }
-                ChildLayoutDirection::TopToBottom => {}
-            }
-        }
-        if current_elements[1].element.layout.sizing.height == SizingMode::Fit || current_elements[1].element.layout.sizing.height == SizingMode::Grow {
-            match current_elements[1].element.layout.layout_direction {
-                ChildLayoutDirection::LeftToRight => {}
-                ChildLayoutDirection::TopToBottom => {
-                    current_elements[1].element.final_size_y += (current_elements[1].element.layout.child_gap * (current_elements[1].child_elements.len() as i32 - 1)) as f32
-                }
-            }
-        }
-
-        context.open_layout_elements.pop();
     }
+
 
     pub(crate) fn size_layout_widths(context: &mut ClayContext, current_element: usize, layout_direction: &ChildLayoutDirection) {
         for child in context.layout_elements[current_element].child_elements.clone() {
