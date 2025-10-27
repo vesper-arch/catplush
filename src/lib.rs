@@ -515,7 +515,7 @@ pub mod clay_main {
                     context.layout_elements[child].element.final_pos_x = context.layout_elements[current_element].element.final_pos_x
                         + context.layout_elements[current_element].element.layout.padding.left as f32;
                 }
-            }
+            };
 
             total_child_x_offset += context.layout_elements[child].element.final_size_x;
             child_num += 1;
@@ -543,7 +543,7 @@ pub mod clay_main {
                         + context.layout_elements[current_element].element.layout.padding.top as f32
                         + (context.layout_elements[current_element].element.layout.child_gap * (child_num - 1)) as f32;
                 }
-            }
+            };
 
             total_child_y_offset += context.layout_elements[child].element.final_size_y;
             child_num += 1;
