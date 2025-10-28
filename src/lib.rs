@@ -410,15 +410,15 @@ pub mod clay_main {
 
     pub fn open_element(context: &mut ClayContext, element: ClayElement) {
         let new_element_index = context.layout_elements.len();
-        let mut parent_element: Option<usize> = None;
+        let mut parent_element: usize = 0;
         
         if context.open_layout_elements.len() > 0 {
             context.layout_elements.last_mut().unwrap().child_elements.push(new_element_index);
-            parent_element = Some(*context.open_layout_elements.last().unwrap());
+            parent_element = *context.open_layout_elements.last().unwrap();
         }
 
         context.open_layout_elements.push(new_element_index);
-        context.layout_elements.push(Node::new(element, parent_element.unwrap()));
+        context.layout_elements.push(Node::new(element, parent_element));
     }
 
     pub fn close_element(context: &mut ClayContext) {
