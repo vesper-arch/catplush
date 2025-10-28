@@ -413,7 +413,7 @@ pub mod clay_main {
         let mut parent_element: usize = 0;
         
         if context.open_layout_elements.len() > 0 {
-            context.layout_elements.last_mut().unwrap().child_elements.push(new_element_index);
+            context.layout_elements[*context.open_layout_elements.last_mut().unwrap()].child_elements.push(new_element_index);
             parent_element = *context.open_layout_elements.last().unwrap();
         }
 
