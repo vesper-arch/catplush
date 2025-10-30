@@ -1,8 +1,9 @@
+#[allow(unused)]
 pub mod clay_main {
     /////////////////////////////////////////////////////////////////
     //////////////// UI Heirarchy Data Structures ///////////////////
     /////////////////////////////////////////////////////////////////
-    
+
     // Holds all of the layout information and currently opened elements for building the ui
     // heirarchy
     pub struct ClayContext {
@@ -27,7 +28,7 @@ pub mod clay_main {
 
         fn get_last_opened_element(&mut self) -> Option<&mut Node> {
             let last_opened_element_index: usize = *self.open_layout_elements.last().expect("There are no currently opened elements");
-            
+
             Some(self.layout_elements.get_mut(last_opened_element_index).unwrap())
         }
 
@@ -40,15 +41,8 @@ pub mod clay_main {
         }
     }
 
-    impl Default for ClayContext {
-        fn default() -> Self {
-            Self {
-                layout_elements: vec![],
-                open_layout_elements: vec![]
-            }
-        }
-    }
 
+    #[derive(Default)]
     struct Node {
         parent: Option<usize>,
         element: ClayElement,
@@ -63,17 +57,13 @@ pub mod clay_main {
                child_elements: vec![]
            }
        }
-
-       fn get_parent_element<'a>(&self, context: &'a mut ClayContext) -> &'a mut Node {
-           context.layout_elements.get_mut(self.parent.unwrap()).unwrap()
-       }
     }
 
     ///////////////////////////////////////////////////////
     //////////////// Element Structures ///////////////////
     ///////////////////////////////////////////////////////
 
-    #[derive(Copy, Clone)]
+    #[derive(Default, Copy, Clone)]
     pub struct ObjectColor( pub u8, pub u8, pub u8, pub u8 );
 
     #[derive(PartialEq)]
@@ -130,11 +120,11 @@ pub mod clay_main {
 
     impl Default for SizeConstraint {
         fn default() -> Self {
-            return Self {min: 0, max: 999999999}
+            Self {min: 0, max: 999999999}
         }
     }
 
-    #[derive(Copy, Clone)]
+    #[derive(Default, Copy, Clone)]
     pub struct CornerRadius {
         pub top_right: f32,
         pub top_left: f32,
@@ -173,23 +163,33 @@ pub mod clay_main {
         }
     }
 
-    pub enum ChildXAlignment { AlignXLeft, AlignXCenter, AlignXRight }
-    pub enum ChildYAlignment { AlignYTop, AlignYCenter, AlignYBottom }
+    #[derive(Default)]
+    pub enum ChildXAlignment {
+        #[default]
+        AlignXLeft,
+        AlignXCenter,
+        AlignXRight
+    }
 
+    #[derive(Default)]
+    pub enum ChildYAlignment {
+        #[default]
+        AlignYTop,
+        AlignYCenter,
+        AlignYBottom
+    }
+
+    #[derive(Default)]
     pub struct ChildAlignment {
         pub x: ChildXAlignment,
         pub y: ChildYAlignment,
     }
 
     impl ChildAlignment {
-        pub fn default() -> Self {
-            ChildAlignment {x: ChildXAlignment::AlignXLeft, y: ChildYAlignment::AlignYTop}
-        }
-
         pub fn new(x_align: ChildXAlignment, y_align: ChildYAlignment) -> Self {
             ChildAlignment {x: x_align, y: y_align}
         }
-        
+
     }
 
     pub struct LayoutConfig {
@@ -214,7 +214,9 @@ pub mod clay_main {
         }
     }
 
+    #[derive(Default)]
     pub enum ElementType {
+        #[default]
         Unset,
         Rectangle,
         Border ( i32 ),
@@ -222,6 +224,7 @@ pub mod clay_main {
         Image ( String )
     }
 
+    #[derive(Default)]
     pub struct ClayElement {
         pub object_type: ElementType,
         pub id: Option<&'static str>,
@@ -238,88 +241,76 @@ pub mod clay_main {
 
     impl ClayElement {
         pub fn new() -> Self {
-            return Self {
-                object_type: ElementType::Unset,
-                id: None,
-                layout: LayoutConfig::default(),
-
-                color: ObjectColor( 0, 0, 0, 0 ),
-                corner_radius: CornerRadius::all(0.0),
-                
-                final_size_x: 0.0,
-                final_size_y: 0.0,
-                final_pos_x: 0.0,
-                final_pos_y: 0.0
-            }
+            Self::default()
         }
-        
+
 
         pub fn rectangle(mut self, color: ObjectColor, corner_radius: CornerRadius) -> Self {
             self.object_type = ElementType::Rectangle;
             self.color = color;
             self.corner_radius = corner_radius;
-            return self
+            self
         }
 
         pub fn border(mut self, color: ObjectColor, corner_radius: CornerRadius, border_width: i32) -> Self {
             self.object_type = ElementType::Border(border_width);
             self.color = color;
             self.corner_radius = corner_radius;
-            return self
+            self
         }
 
         pub fn text(mut self, text: String, color: ObjectColor, font_size: u8) -> Self {
             self.object_type = ElementType::Text( text, font_size );
             self.color = color;
-            return self
+            self
         }
 
         pub fn image(mut self, file: String, corner_radius: CornerRadius) -> Self {
             self.object_type = ElementType::Image( file );
             self.corner_radius = corner_radius;
-            return self
+            self
         }
 
         pub fn child_gap(mut self, amount: i32) -> Self {
             self.layout.child_gap = amount;
-            return self
+            self
         }
 
         pub fn padding(mut self, padding: Padding) -> Self {
             self.layout.padding = padding;
-            return self
+            self
         }
 
         pub fn sizing(mut self, x: SizingMode, y: SizingMode) -> Self {
             self.layout.sizing = Sizing{ width: x, height: y };
-            return self
+            self
         }
 
         pub fn constrain(mut self, width: SizeConstraint, height: SizeConstraint) -> Self {
             self.layout.size_constraints = (width, height);
-            return self
+            self
         }
 
         pub fn layout_direction(mut self, direction: ChildLayoutDirection) -> Self {
             self.layout.layout_direction = direction;
-            return self
+            self
         }
 
         pub fn alignment(mut self, x_align: ChildXAlignment, y_align: ChildYAlignment) -> Self {
             self.layout.child_alignment = ChildAlignment{ x: x_align, y: y_align };
-            return self
+            self
         }
 
         pub fn id(mut self, id: &'static str) -> Self {
             self.id = Some(id);
-            return self
+            self
         }
     }
 
     //////////////////////////////////////////////////////////
     ////////////////  Render Structures  /////////////////////
     //////////////////////////////////////////////////////////
-    
+
     #[derive(Copy, Clone)]
     pub(crate) struct BoundingBox {
         pub(crate) x: f32,
@@ -359,11 +350,11 @@ pub mod clay_main {
         TextData(TextRenderData),
         ImageData(ImageRenderData)
     }
-    
-    pub struct RenderCommand {
-        pub bounding_box: BoundingBox,
 
-        pub render_data: RenderData,
+    pub struct RenderCommand {
+        pub(crate) bounding_box: BoundingBox,
+
+        pub(crate) render_data: RenderData,
 
         pub id: &'static str,
     }
@@ -375,8 +366,6 @@ pub mod clay_main {
         // renderer
         pub fn end_layout(mut self) -> Vec<RenderCommand> {
             self.open_layout_elements.clear();
-
-            self.size_layout_widths(0, &ChildLayoutDirection::LeftToRight);
 
             self.position_all(&ChildLayoutDirection::LeftToRight);
 
@@ -396,15 +385,12 @@ pub mod clay_main {
                     }
                 };
 
-                let id = match element.id.clone() {
-                    Some(i) => i,
-                    _ => ""
-                };
-                
+                let id = element.id.unwrap_or_default();
+
                 render_commands.push( RenderCommand { bounding_box, render_data, id } );
             }
 
-            return render_commands
+            render_commands
         }
 
         //////////// Layout Building Functions //////////////
@@ -412,8 +398,8 @@ pub mod clay_main {
         pub fn open_element(&mut self, element: ClayElement) {
             let new_element_index = self.layout_elements.len();
             let mut parent_element: usize = 0;
-            
-            if self.open_layout_elements.len() > 0 {
+
+            if !self.open_layout_elements.is_empty() {
                 self.layout_elements[*self.open_layout_elements.last_mut().unwrap()].child_elements.push(new_element_index);
                 parent_element = *self.open_layout_elements.last().unwrap();
             }
@@ -432,62 +418,55 @@ pub mod clay_main {
             let layout_slice = &mut self.layout_elements[..];
             let last_opened_element = *self.open_layout_elements.last().unwrap();
             let parent_element = layout_slice[last_opened_element].parent.unwrap();
-            // index 0: parent node | index 1: last opened node (the one being closed)
-            let current_elements = layout_slice.get_disjoint_mut([parent_element, last_opened_element]).unwrap();
+
+            let [parent_node, closing_node] = layout_slice.get_disjoint_mut([parent_element, last_opened_element]).unwrap();
 
             // Padding
-            current_elements[1].element.final_size_x += (current_elements[1].element.layout.padding.left + current_elements[1].element.layout.padding.right) as f32;
-            current_elements[1].element.final_size_y += (current_elements[1].element.layout.padding.top + current_elements[1].element.layout.padding.bottom) as f32;
+            closing_node.element.final_size_x += (closing_node.element.layout.padding.left + closing_node.element.layout.padding.right) as f32;
+            closing_node.element.final_size_y += (closing_node.element.layout.padding.top + closing_node.element.layout.padding.bottom) as f32;
 
             // Fixed Sizing
-            match current_elements[1].element.layout.sizing.width {
-                SizingMode::Fixed(size) => {current_elements[1].element.final_size_x = size as f32},
+            match closing_node.element.layout.sizing.width {
+                SizingMode::Fixed(size) => {closing_node.element.final_size_x = size as f32},
                 SizingMode::Fit => {},
                 SizingMode::Grow => {},
             }
-            match current_elements[1].element.layout.sizing.height {
-                SizingMode::Fixed(size) => {current_elements[1].element.final_size_y = size as f32},
+            match closing_node.element.layout.sizing.height {
+                SizingMode::Fixed(size) => {closing_node.element.final_size_y = size as f32},
                 SizingMode::Fit => {},
                 SizingMode::Grow => {},
             }
 
-            let child_gap = (current_elements[0].child_elements.len() as i32 - 1) * current_elements[0].element.layout.child_gap;
+            let child_gap = (parent_node.child_elements.len() as i32 - 1) * parent_node.element.layout.child_gap;
 
             // Fit Sizing
-            if current_elements[0].element.layout.sizing.width == SizingMode::Fit || current_elements[0].element.layout.sizing.width == SizingMode::Grow {
-                if current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
-                    current_elements[0].element.final_size_x += child_gap as f32;
-                    current_elements[0].element.final_size_x += current_elements[1].element.final_size_x;
+            if parent_node.element.layout.sizing.width == SizingMode::Fit || parent_node.element.layout.sizing.width == SizingMode::Grow {
+                if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+                    parent_node.element.final_size_x += child_gap as f32;
+                    parent_node.element.final_size_x += closing_node.element.final_size_x;
                 } else {
-                    current_elements[0].element.final_size_x = f32::max(current_elements[1].element.final_size_x, current_elements[0].element.final_size_x)
+                    parent_node.element.final_size_x = f32::max(closing_node.element.final_size_x, parent_node.element.final_size_x)
                 }
 
             }
-            if current_elements[0].element.layout.sizing.height == SizingMode::Fit || current_elements[0].element.layout.sizing.height == SizingMode::Grow {
-                if current_elements[0].element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
-                    current_elements[0].element.final_size_y = f32::max(current_elements[1].element.final_size_y, current_elements[0].element.final_size_y);
+            if parent_node.element.layout.sizing.height == SizingMode::Fit || parent_node.element.layout.sizing.height == SizingMode::Grow {
+                if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+                    parent_node.element.final_size_y = f32::max(closing_node.element.final_size_y, parent_node.element.final_size_y);
                 } else {
-                    current_elements[0].element.final_size_y += child_gap as f32;
-                    current_elements[0].element.final_size_y += current_elements[1].element.final_size_y;
+                    parent_node.element.final_size_y += child_gap as f32;
+                    parent_node.element.final_size_y += closing_node.element.final_size_y;
                 }
             }
 
             self.open_layout_elements.pop();
         }
 
-
-        pub(crate) fn size_layout_widths(&mut self, current_element: usize, layout_direction: &ChildLayoutDirection) {
-            for child in self.layout_elements[current_element].child_elements.clone() {
-                self.size_layout_widths(child, layout_direction);
-            }
-        }
-
         pub(crate) fn position_all(&mut self, layout_direction: &ChildLayoutDirection) {
-            self.position_along_x(0, layout_direction);
-            self.position_along_y(0, layout_direction);
+            self.position_along_x(0);
+            self.position_along_y(0);
         }
 
-        pub(crate) fn position_along_x(&mut self, current_element: usize, layout_direction: &ChildLayoutDirection) {
+        pub(crate) fn position_along_x(&mut self, current_element: usize) {
             let mut child_num = 1;
             let mut total_child_x_offset = 0.0;
 
@@ -510,12 +489,12 @@ pub mod clay_main {
             }
 
             for child in self.layout_elements[current_element].child_elements.clone() {
-                self.position_along_x(child, layout_direction);
+                self.position_along_x(child);
             }
         }
 
 
-        pub(crate) fn position_along_y(&mut self, current_element: usize, layout_direction: &ChildLayoutDirection) {
+        pub(crate) fn position_along_y(&mut self, current_element: usize) {
             let mut child_num = 1;
             let mut total_child_y_offset = 0.0;
 
@@ -538,7 +517,7 @@ pub mod clay_main {
             }
 
             for child in self.layout_elements[current_element].child_elements.clone() {
-                self.position_along_y(child, layout_direction);
+                self.position_along_y(child);
             }
         }
     }
