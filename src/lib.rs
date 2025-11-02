@@ -1,8 +1,11 @@
+
 #[allow(unused)]
 pub mod clay_main {
     /////////////////////////////////////////////////////////////////
     //////////////// UI Heirarchy Data Structures ///////////////////
     /////////////////////////////////////////////////////////////////
+
+    use std::cmp::Ordering;
 
     // Holds all of the layout information and currently opened elements for building the ui
     // heirarchy
@@ -367,7 +370,8 @@ pub mod clay_main {
         pub fn end_layout(mut self) -> Vec<RenderCommand> {
             self.open_layout_elements.clear();
 
-            self.position_all(&ChildLayoutDirection::LeftToRight);
+            self.position_all();
+            self.size_all();
 
             let mut render_commands: Vec<RenderCommand> = vec![];
             for node in &self.layout_elements[1..self.layout_elements.len()] {
@@ -461,9 +465,87 @@ pub mod clay_main {
             self.open_layout_elements.pop();
         }
 
-        pub(crate) fn position_all(&mut self, layout_direction: &ChildLayoutDirection) {
-            self.position_along_axis(*layout_direction == ChildLayoutDirection::LeftToRight, 0);
-            self.position_along_axis(*layout_direction == ChildLayoutDirection::LeftToRight, 0);
+        pub(crate) fn size_all(&mut self) {
+            self.size_along_axis(true, 0);
+            self.size_along_axis(false, 0);
+        }
+
+        pub(crate) fn size_along_axis(&mut self, left_to_right: bool, current_index: usize) {
+            let mut current_node = &mut self.layout_elements[current_index];
+            let mut growable_elements: Vec<usize> = vec![];
+
+            let sizing_along_axis =
+                (left_to_right && current_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight)
+                || (!left_to_right && current_node.element.layout.layout_direction == ChildLayoutDirection::TopToBottom);
+
+            let padding =
+                if left_to_right {current_node.element.layout.padding.left + current_node.element.layout.padding.right}
+                else { current_node.element.layout.padding.top + current_node.element.layout.padding.bottom };
+            let child_gap = (current_node.child_elements.len() as i32 - 1) * current_node.element.layout.child_gap;
+            let parent_size = if left_to_right {current_node.element.final_size_x} else {current_node.element.final_size_y};
+
+            let mut inner_content_size = 0.0;
+            for child in current_node.child_elements.clone() {
+                if left_to_right {
+                    inner_content_size += self.layout_elements[child].element.final_size_x;
+                } else {
+                    inner_content_size += self.layout_elements[child].element.final_size_y;
+                }
+
+                let child_sizing_mode =
+                    if left_to_right { self.layout_elements[child].element.layout.sizing.width == SizingMode::Grow }
+                    else { self.layout_elements[child].element.layout.sizing.height == SizingMode::Grow };
+                if child_sizing_mode {
+                    growable_elements.push(child);
+                }
+            }
+
+            if sizing_along_axis {
+                let mut size_to_distribute = parent_size - padding as f32 - child_gap as f32 - inner_content_size;
+
+                growable_elements.retain(
+                    |&x|
+                    (left_to_right && self.layout_elements[x].element.layout.sizing.width == SizingMode::Grow)
+                    ||
+                    (!left_to_right && self.layout_elements[x].element.layout.sizing.height == SizingMode::Grow)
+                );
+
+                if size_to_distribute > 0.0 {
+                    let mut smallest_size = 0.0;
+                    let mut second_smallest_size = 0.0;
+                    let mut width_to_add = size_to_distribute;
+
+                    for child_index in &growable_elements {
+                        let child_size = if left_to_right { self.layout_elements[*child_index].element.final_size_x } else { self.layout_elements[*child_index].element.final_size_y };
+                        match child_size.total_cmp(&smallest_size) {
+                            Ordering::Less => { second_smallest_size = smallest_size; smallest_size = child_size; },
+                            Ordering::Equal => { continue; },
+                            Ordering::Greater => { second_smallest_size = f32::min(second_smallest_size, child_size); width_to_add = second_smallest_size - smallest_size; }
+                        }
+
+                        width_to_add = f32::min(width_to_add, size_to_distribute / growable_elements.len() as f32);
+
+                        for child_index in &growable_elements {
+                            let mut child_size =
+                                if left_to_right { self.layout_elements[*child_index].element.final_size_x }
+                                else { self.layout_elements[*child_index].element.final_size_y };
+                            let initial_size = child_size;
+
+                            child_size += width_to_add;
+                            size_to_distribute -= (child_size - initial_size)
+                        }
+                    }
+                }
+            }
+
+            for child in self.layout_elements[current_index].child_elements.clone() {
+                self.size_along_axis(left_to_right, child);
+            }
+        }
+
+        pub(crate) fn position_all(&mut self) {
+            self.position_along_axis(true, 0);
+            self.position_along_axis(false, 0);
         }
 
         pub(crate) fn position_along_axis(&mut self, left_to_right: bool, current_element: usize) {
