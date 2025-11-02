@@ -548,37 +548,37 @@ pub mod clay_main {
             self.position_along_axis(false, 0);
         }
 
-        pub(crate) fn position_along_axis(&mut self, left_to_right: bool, current_element: usize) {
+        pub(crate) fn position_along_axis(&mut self, left_to_right: bool, current_index: usize) {
             let mut child_num = 1;
             let mut total_child_offset = 0.0;
 
-            for child in self.layout_elements[current_element].child_elements.clone() {
+            for child in self.layout_elements[current_index].child_elements.clone() {
                 if left_to_right {
-                    match self.layout_elements[current_element].element.layout.layout_direction {
+                    match self.layout_elements[current_index].element.layout.layout_direction {
                         ChildLayoutDirection::LeftToRight => {
                             self.layout_elements[child].element.final_pos_x = total_child_offset
-                                + self.layout_elements[current_element].element.final_pos_x
-                                + self.layout_elements[current_element].element.layout.padding.left as f32
-                                + (self.layout_elements[current_element].element.layout.child_gap * (child_num - 1)) as f32;
+                                + self.layout_elements[current_index].element.final_pos_x
+                                + self.layout_elements[current_index].element.layout.padding.left as f32
+                                + (self.layout_elements[current_index].element.layout.child_gap * (child_num - 1)) as f32;
                         }
                         ChildLayoutDirection::TopToBottom => {
-                            self.layout_elements[child].element.final_pos_x = self.layout_elements[current_element].element.final_pos_x
-                                + self.layout_elements[current_element].element.layout.padding.left as f32;
+                            self.layout_elements[child].element.final_pos_x = self.layout_elements[current_index].element.final_pos_x
+                                + self.layout_elements[current_index].element.layout.padding.left as f32;
                         }
                     };
 
                     total_child_offset += self.layout_elements[child].element.final_size_x;
                 } else {
-                    match self.layout_elements[current_element].element.layout.layout_direction {
+                    match self.layout_elements[current_index].element.layout.layout_direction {
                         ChildLayoutDirection::LeftToRight => {
-                            self.layout_elements[child].element.final_pos_y = self.layout_elements[current_element].element.final_pos_y
-                                + self.layout_elements[current_element].element.layout.padding.top as f32;
+                            self.layout_elements[child].element.final_pos_y = self.layout_elements[current_index].element.final_pos_y
+                                + self.layout_elements[current_index].element.layout.padding.top as f32;
                         }
                         ChildLayoutDirection::TopToBottom => {
                             self.layout_elements[child].element.final_pos_y = total_child_offset
-                                + self.layout_elements[current_element].element.final_pos_y
-                                + self.layout_elements[current_element].element.layout.padding.top as f32
-                                + (self.layout_elements[current_element].element.layout.child_gap * (child_num - 1)) as f32;
+                                + self.layout_elements[current_index].element.final_pos_y
+                                + self.layout_elements[current_index].element.layout.padding.top as f32
+                                + (self.layout_elements[current_index].element.layout.child_gap * (child_num - 1)) as f32;
                         }
                     };
 
@@ -587,36 +587,8 @@ pub mod clay_main {
 
             }
 
-            for child in self.layout_elements[current_element].child_elements.clone() {
+            for child in self.layout_elements[current_index].child_elements.clone() {
                 self.position_along_axis(left_to_right, child);
-            }
-        }
-
-
-        pub(crate) fn position_along_y(&mut self, current_element: usize) {
-            let mut child_num = 1;
-            let mut total_child_y_offset = 0.0;
-
-            for child in self.layout_elements[current_element].child_elements.clone() {
-                match self.layout_elements[current_element].element.layout.layout_direction {
-                    ChildLayoutDirection::LeftToRight => {
-                        self.layout_elements[child].element.final_pos_y = self.layout_elements[current_element].element.final_pos_y
-                            + self.layout_elements[current_element].element.layout.padding.top as f32;
-                    }
-                    ChildLayoutDirection::TopToBottom => {
-                        self.layout_elements[child].element.final_pos_y = total_child_y_offset
-                            + self.layout_elements[current_element].element.final_pos_y
-                            + self.layout_elements[current_element].element.layout.padding.top as f32
-                            + (self.layout_elements[current_element].element.layout.child_gap * (child_num - 1)) as f32;
-                    }
-                };
-
-                total_child_y_offset += self.layout_elements[child].element.final_size_y;
-                child_num += 1;
-            }
-
-            for child in self.layout_elements[current_element].child_elements.clone() {
-                self.position_along_y(child);
             }
         }
     }
