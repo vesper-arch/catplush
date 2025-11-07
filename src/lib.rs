@@ -370,8 +370,8 @@ pub mod clay_main {
         pub fn end_layout(mut self) -> Vec<RenderCommand> {
             self.open_layout_elements.clear();
 
-            self.position_all();
             self.size_all();
+            self.position_all();
 
             let mut render_commands: Vec<RenderCommand> = vec![];
             for node in &self.layout_elements[1..self.layout_elements.len()] {
