@@ -26,6 +26,9 @@ pub mod clay_main {
                 .sizing(SizingMode::Fixed(window_size.0), SizingMode::Fixed(window_size.1))
                 .layout_direction(layout_direction));
 
+            new_context.layout_elements[0].element.final_size_x = window_size.0 as f32;
+            new_context.layout_elements[0].element.final_size_y = window_size.1 as f32;
+
             new_context
         }
 
@@ -511,30 +514,43 @@ pub mod clay_main {
                 );
 
                 if size_to_distribute > 0.0 {
-                    let mut smallest_size = 0.0;
-                    let mut second_smallest_size = 0.0;
+                    let mut smallest_size = f32::MAX;
+                    let mut second_smallest_size = f32::MAX;
                     let mut width_to_add = size_to_distribute;
 
                     for child_index in &growable_elements {
                         let child_size = if left_to_right { self.layout_elements[*child_index].element.final_size_x } else { self.layout_elements[*child_index].element.final_size_y };
-                        match child_size.total_cmp(&smallest_size) {
-                            Ordering::Less => { second_smallest_size = smallest_size; smallest_size = child_size; },
-                            Ordering::Equal => { continue; },
-                            Ordering::Greater => { second_smallest_size = f32::min(second_smallest_size, child_size); width_to_add = second_smallest_size - smallest_size; }
+                        for child_index in &growable_elements {
+                            let child_size = if left_to_right { self.layout_elements[*child_index].element.final_size_x } else { self.layout_elements[*child_index].element.final_size_y };
+                            match child_size.total_cmp(&smallest_size) {
+                                Ordering::Less => { second_smallest_size = smallest_size; smallest_size = child_size; },
+                                Ordering::Equal => { continue; },
+                                Ordering::Greater => { second_smallest_size = f32::min(second_smallest_size, child_size); width_to_add = second_smallest_size - smallest_size; }
+                            }
                         }
 
-                        width_to_add = f32::min(width_to_add, size_to_distribute / growable_elements.len() as f32);
+                        width_to_add = f32::min(width_to_add, size_to_distribute / (growable_elements.len() as f32));
 
                         for child_index in &growable_elements {
                             let mut child_size =
-                                if left_to_right { self.layout_elements[*child_index].element.final_size_x }
-                                else { self.layout_elements[*child_index].element.final_size_y };
-                            let initial_size = child_size;
+                                if left_to_right { &mut self.layout_elements[*child_index].element.final_size_x }
+                                else { &mut self.layout_elements[*child_index].element.final_size_y };
+                            let initial_size = *child_size;
 
-                            child_size += width_to_add;
-                            size_to_distribute -= (child_size - initial_size)
+                            *child_size += width_to_add;
+                            size_to_distribute -= (*child_size - initial_size)
                         }
                     }
+                }
+            } else {
+                for child_index in &growable_elements {
+                    let mut child_size =
+                        if left_to_right { &mut self.layout_elements[*child_index].element.final_size_x }
+                        else { &mut self.layout_elements[*child_index].element.final_size_y };
+
+                    let max_size = parent_size - padding as f32;
+
+                    *child_size = max_size
                 }
             }
 
@@ -584,7 +600,7 @@ pub mod clay_main {
 
                     total_child_offset += self.layout_elements[child].element.final_size_y;
                 }
-
+                child_num += 1;
             }
 
             for child in self.layout_elements[current_index].child_elements.clone() {
