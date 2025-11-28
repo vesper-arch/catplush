@@ -10,14 +10,15 @@ fn main() {
         .resizable()
         .build();
 
+    let test_image = rl.load_texture(&thread, "/home/vesper-arch/Documents/Downfall/Tiny Card Icons/CardIcon_Boss_Skill_Uncommon.png").unwrap();
+
     while !rl.window_should_close() {
         let mut ui = ClayContext::begin_layout((rl.get_screen_width(), rl.get_screen_height()), ChildLayoutDirection::LeftToRight);
 
 
         // Only used to show where the below image should be by inserting a gap.
         ui.open_element(ClayElement::new()
-            .rectangle(ObjectColor(0, 0, 0, 0), CornerRadius::all(0.0))
-            .sizing(SizingMode::Fixed(32), SizingMode::Fixed(32)));
+            .image(raylib_to_clay_image(&test_image), ObjectColor(255, 255, 255, 255), CornerRadius::all(5.0)));
         ui.close_element();
 
         ui.open_element(ClayElement::new()
@@ -48,10 +49,8 @@ fn main() {
         ui.close_element();
         let render_commands = ui.end_layout();
 
-        let test_image = rl.load_texture(&thread, "/home/vesper-arch/Documents/Downfall/Tiny Card Icons/CardIcon_Boss_Skill_Uncommon.png").unwrap();
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(Color::WHITE);
-        d.draw_texture(test_image, 0, 0, Color{r: 0, g: 0, b: 0, a: 255});
         raylib_render_all(render_commands, &mut d);
     }
 }

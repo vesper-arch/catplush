@@ -629,6 +629,8 @@ pub mod clay_main {
 }
 
 pub mod clay_raylib {
+    use std::fmt::format;
+
     use raylib::ffi;
     use raylib::prelude::*;
     use crate::clay_main::{self, ClayImageData};
@@ -660,7 +662,7 @@ pub mod clay_raylib {
 
                     unsafe { // Uh huh I'm sure this will have no lasting consquences
                         let formatted_image: Texture2D = Texture2D::from_raw(ffi::LoadTextureFromImage(image));
-                        draw_handle.draw_texture(formatted_image, bounding_box.x as i32, bounding_box.y as i32, clay_to_raylib_color(&data.tint));
+                        draw_handle.draw_texture(&formatted_image, bounding_box.x as i32, bounding_box.y as i32, clay_to_raylib_color(&data.tint));
                     }
                 }
                 // not even sure how to handle text yet sob
