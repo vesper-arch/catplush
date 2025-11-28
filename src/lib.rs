@@ -5,7 +5,8 @@ pub mod clay_main {
     //////////////// UI Heirarchy Data Structures ///////////////////
     /////////////////////////////////////////////////////////////////
 
-    use std::cmp::Ordering;
+    use std::{cmp::Ordering};
+    use std::ffi::c_void;
 
     // Holds all of the layout information and currently opened elements for building the ui
     // heirarchy
@@ -220,6 +221,15 @@ pub mod clay_main {
         }
     }
 
+    #[derive(Copy, Clone)]
+    pub struct ClayImageData {
+        pub(crate) data: *mut c_void,
+        pub(crate) width: i32,
+        pub(crate) height: i32,
+        pub(crate) mipmaps: i32,
+        pub(crate) format: i32
+    }
+
     #[derive(Default)]
     pub enum ElementType {
         #[default]
@@ -227,7 +237,7 @@ pub mod clay_main {
         Rectangle,
         Border ( i32 ),
         Text ( String, u8 ),
-        Image ( String )
+        Image ( ClayImageData )
     }
 
     #[derive(Default)]
@@ -271,9 +281,11 @@ pub mod clay_main {
             self
         }
 
-        pub fn image(mut self, file: String, corner_radius: CornerRadius) -> Self {
-            self.object_type = ElementType::Image( file );
+        pub fn image(mut self, image_file: ClayImageData, tint: ObjectColor, corner_radius: CornerRadius) -> Self {
+            self.object_type = ElementType::Image( image_file );
+            self.color = tint;
             self.corner_radius = corner_radius;
+            self.layout.sizing = Sizing{ width: SizingMode::Fixed(image_file.width), height: SizingMode::Fixed(image_file.height) };
             self
         }
 
@@ -345,6 +357,12 @@ pub mod clay_main {
     }
 
     pub(crate) struct ImageRenderData {
+        pub(crate) data: *mut c_void,
+        pub(crate) width: i32,
+        pub(crate) height: i32,
+        pub(crate) mipmaps: i32,
+        pub(crate) format: i32,
+
         pub(crate) tint: ObjectColor,
         pub(crate) corner_radius: CornerRadius
     }
@@ -388,7 +406,7 @@ pub mod clay_main {
                         RenderData::TextData(TextRenderData { color: element.color, font_size: *font_size, letter_spacing: 0, line_height: 0 })
                     },
                     ElementType::Image(file) => {
-                        RenderData::ImageData(ImageRenderData { tint: element.color, corner_radius: element.corner_radius })
+                        RenderData::ImageData(ImageRenderData { data: file.data, width: file.width, height: file.height, mipmaps: file.mipmaps, format: file.format, tint: element.color, corner_radius: element.corner_radius })
                     }
                 };
 
@@ -611,8 +629,9 @@ pub mod clay_main {
 }
 
 pub mod clay_raylib {
+    use raylib::ffi;
     use raylib::prelude::*;
-    use crate::clay_main;
+    use crate::clay_main::{self, ClayImageData};
     use crate::clay_main::{RenderCommand, RenderData};
 
     pub fn raylib_render_all(render_commands: Vec<RenderCommand>, draw_handle: &mut RaylibDrawHandle<'_>) {
@@ -636,8 +655,16 @@ pub mod clay_raylib {
                         draw_handle.draw_rectangle_lines_ex(clay_to_raylib_rect(&bounding_box), data.width as f32, clay_to_raylib_color(&data.color));
                     }
                 }
-                // not even sure how to handle text and images yet
-                RenderData::TextData(_) | RenderData::ImageData(_) => todo!()
+                RenderData::ImageData(data) => {
+                    let image = ffi::Image {data: data.data, width: data.width, height: data.height, mipmaps: data.mipmaps, format: data.format};
+
+                    unsafe { // Uh huh I'm sure this will have no lasting consquences
+                        let formatted_image: Texture2D = Texture2D::from_raw(ffi::LoadTextureFromImage(image));
+                        draw_handle.draw_texture(formatted_image, bounding_box.x as i32, bounding_box.y as i32, clay_to_raylib_color(&data.tint));
+                    }
+                }
+                // not even sure how to handle text yet sob
+                RenderData::TextData(_) => todo!()
             }
         }
     }
@@ -658,6 +685,12 @@ pub mod clay_raylib {
             b: color.2,
             a: color.3
         }
+    }
+
+    pub fn raylib_to_clay_image(image: &Texture2D) -> clay_main::ClayImageData {
+        let raw_image = image.load_image().unwrap().to_raw();
+
+        ClayImageData { data: raw_image.data, width: raw_image.width, height: raw_image.height, mipmaps: raw_image.mipmaps, format: raw_image.format }
     }
 }
 
