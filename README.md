@@ -1,8 +1,21 @@
-# Rust C-layout
-Implementing Nic Barker's Clay algorithm from scratch in Rust.
+# catplush
+An immediate mode ui framework using a Rust implementation of the C-layout (or Clay) algorithm.
 
-Currently very early on so a ton of features do not exist yet.
-I am aware that there exists bindings for Rust but I am choosing to ignore that so I can actually make something for once.
+catplush is designed to have a small amount of dependencies and be uncoupled from rendering libraries so it can be as flexible as possible.
 
-Original project can be found here:
+## The Renderer
+The raylib crate was exceptionally confusing to make work with images and ended up giving nonsense errors.
+
+The next logical step is to learn OpenGL from scratch and make my own renderer.
+
+More on this as the story develops.
+
+## What's with the name?
+<img width="313" height="330" alt="image" src="https://github.com/user-attachments/assets/363632f6-01d5-410d-86a0-4ad3217a29e0" />
+
+I mean I might as well.
+
+---
+The original Clay code can be found here:
+
 https://github.com/nicbarker/clay
