@@ -1,5 +1,4 @@
 
-#[allow(unused)]
 pub mod catplush_main {
     /////////////////////////////////////////////////////////////////
     //////////////// UI Heirarchy Data Structures ///////////////////
@@ -31,12 +30,6 @@ pub mod catplush_main {
             new_context.layout_elements[0].element.final_size_y = window_size.1 as f32;
 
             new_context
-        }
-
-        fn get_last_opened_element(&mut self) -> Option<&mut Node> {
-            let last_opened_element_index: usize = *self.open_layout_elements.last().expect("There are no currently opened elements");
-
-            Some(self.layout_elements.get_mut(last_opened_element_index).unwrap())
         }
 
         pub fn get_all_elements(&mut self) -> Vec<&UiElement> {
@@ -371,7 +364,7 @@ pub mod catplush_main {
         }
 
         pub(crate) fn size_along_axis(&mut self, left_to_right: bool, current_index: usize) {
-            let mut current_node = &mut self.layout_elements[current_index];
+            let current_node = &mut self.layout_elements[current_index];
             let mut growable_elements: Vec<usize> = vec![];
 
             let sizing_along_axis =
@@ -417,31 +410,28 @@ pub mod catplush_main {
 
                     for child_index in &growable_elements {
                         let child_size = if left_to_right { self.layout_elements[*child_index].element.final_size_x } else { self.layout_elements[*child_index].element.final_size_y };
-                        for child_index in &growable_elements {
-                            let child_size = if left_to_right { self.layout_elements[*child_index].element.final_size_x } else { self.layout_elements[*child_index].element.final_size_y };
-                            match child_size.total_cmp(&smallest_size) {
-                                Ordering::Less => { second_smallest_size = smallest_size; smallest_size = child_size; },
-                                Ordering::Equal => { continue; },
-                                Ordering::Greater => { second_smallest_size = f32::min(second_smallest_size, child_size); width_to_add = second_smallest_size - smallest_size; }
-                            }
+                        match child_size.total_cmp(&smallest_size) {
+                            Ordering::Less => { second_smallest_size = smallest_size; smallest_size = child_size; },
+                            Ordering::Equal => { continue; },
+                            Ordering::Greater => { second_smallest_size = f32::min(second_smallest_size, child_size); width_to_add = second_smallest_size - smallest_size; }
                         }
+                    }
 
-                        width_to_add = f32::min(width_to_add, size_to_distribute / (growable_elements.len() as f32));
+                    width_to_add = f32::min(width_to_add, size_to_distribute / (growable_elements.len() as f32));
 
-                        for child_index in &growable_elements {
-                            let mut child_size =
-                                if left_to_right { &mut self.layout_elements[*child_index].element.final_size_x }
-                                else { &mut self.layout_elements[*child_index].element.final_size_y };
-                            let initial_size = *child_size;
+                    for child_index in &growable_elements {
+                        let child_size =
+                            if left_to_right { &mut self.layout_elements[*child_index].element.final_size_x }
+                            else { &mut self.layout_elements[*child_index].element.final_size_y };
+                        let initial_size = *child_size;
 
-                            *child_size += width_to_add;
-                            size_to_distribute -= (*child_size - initial_size)
-                        }
+                        *child_size += width_to_add;
+                        size_to_distribute -= *child_size - initial_size
                     }
                 }
             } else {
                 for child_index in &growable_elements {
-                    let mut child_size =
+                    let child_size =
                         if left_to_right { &mut self.layout_elements[*child_index].element.final_size_x }
                         else { &mut self.layout_elements[*child_index].element.final_size_y };
 
@@ -610,17 +600,17 @@ pub mod catplush_raylib {
                 RenderData::RectangleData(data) => {
                     if data.corner_radius.top_left != 0.0 {
                         let radius = (data.corner_radius.top_left * 2.0) / (if bounding_box.width > bounding_box.height { bounding_box.height } else { bounding_box.width });
-                        draw_handle.draw_rectangle_rounded(clay_to_raylib_rect(&bounding_box), radius, 16, clay_to_raylib_color(&data.color));
+                        draw_handle.draw_rectangle_rounded(plush_to_raylib_rect(&bounding_box), radius, 16, plush_to_raylib_color(&data.color));
                     } else {
-                        draw_handle.draw_rectangle(bounding_box.x as i32, bounding_box.y as i32, bounding_box.width as i32, bounding_box.height as i32, clay_to_raylib_color(&data.color));
+                        draw_handle.draw_rectangle(bounding_box.x as i32, bounding_box.y as i32, bounding_box.width as i32, bounding_box.height as i32, plush_to_raylib_color(&data.color));
                     }
                 }
                 RenderData::BorderData(data) => {
                     if data.corner_radius.top_left != 0.0 {
                         let radius = (data.corner_radius.top_left * 2.0) / (if bounding_box.width > bounding_box.height { bounding_box.height } else { bounding_box.width });
-                        draw_handle.draw_rectangle_rounded_lines_ex(clay_to_raylib_rect(&bounding_box), radius, 8, data.width as f32, clay_to_raylib_color(&data.color));
+                        draw_handle.draw_rectangle_rounded_lines_ex(plush_to_raylib_rect(&bounding_box), radius, 8, data.width as f32, plush_to_raylib_color(&data.color));
                     } else {
-                        draw_handle.draw_rectangle_lines_ex(clay_to_raylib_rect(&bounding_box), data.width as f32, clay_to_raylib_color(&data.color));
+                        draw_handle.draw_rectangle_lines_ex(plush_to_raylib_rect(&bounding_box), data.width as f32, plush_to_raylib_color(&data.color));
                     }
                 }
                 // not even sure how to handle text yet sob. Images do NOT work with this implementation. Raylib will have to be changed out.
@@ -630,7 +620,7 @@ pub mod catplush_raylib {
         }
     }
 
-    pub(crate) fn clay_to_raylib_rect(object: &catplush_main::BoundingBox) -> Rectangle {
+    pub(crate) fn plush_to_raylib_rect(object: &catplush_main::BoundingBox) -> Rectangle {
         Rectangle {
             x: object.x,
             y: object.y,
@@ -639,7 +629,7 @@ pub mod catplush_raylib {
         }
     }
 
-    pub fn clay_to_raylib_color(color: &catplush_main::ObjectColor) -> Color {
+    pub fn plush_to_raylib_color(color: &catplush_main::ObjectColor) -> Color {
         Color {
             r: color.0,
             g: color.1,
@@ -648,19 +638,9 @@ pub mod catplush_raylib {
         }
     }
 
-    pub fn raylib_to_clay_image(image: &Texture2D) -> catplush_main::CatplushImageData {
+    pub fn raylib_to_plush_image(image: &Texture2D) -> catplush_main::CatplushImageData {
         let raw_image = image.load_image().unwrap().to_raw();
 
         CatplushImageData { data: raw_image.data, width: raw_image.width, height: raw_image.height, mipmaps: raw_image.mipmaps, format: raw_image.format }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 4, 6);
     }
 }
