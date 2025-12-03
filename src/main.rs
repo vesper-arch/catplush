@@ -1,4 +1,4 @@
-use rust_clayout::clay_main::*;
+use rust_clayout::catplush_main::*;
 use rust_clayout::catplush_raylib::*;
 use raylib::prelude::*;
 

@@ -1,6 +1,6 @@
 
 #[allow(unused)]
-pub mod clay_main {
+pub mod catplush_main {
     /////////////////////////////////////////////////////////////////
     //////////////// UI Heirarchy Data Structures ///////////////////
     /////////////////////////////////////////////////////////////////
@@ -599,8 +599,8 @@ pub mod clay_main {
 
 pub mod catplush_raylib {
     use raylib::prelude::*;
-    use crate::clay_main::{self, CatplushImageData};
-    use crate::clay_main::{RenderCommand, RenderData};
+    use crate::catplush_main::{self, CatplushImageData};
+    use crate::catplush_main::{RenderCommand, RenderData};
 
     pub fn raylib_render_all(render_commands: Vec<RenderCommand>, draw_handle: &mut RaylibDrawHandle<'_>) {
         for command in render_commands {
@@ -630,7 +630,7 @@ pub mod catplush_raylib {
         }
     }
 
-    pub(crate) fn clay_to_raylib_rect(object: &clay_main::BoundingBox) -> Rectangle {
+    pub(crate) fn clay_to_raylib_rect(object: &catplush_main::BoundingBox) -> Rectangle {
         Rectangle {
             x: object.x,
             y: object.y,
@@ -639,7 +639,7 @@ pub mod catplush_raylib {
         }
     }
 
-    pub fn clay_to_raylib_color(color: &clay_main::ObjectColor) -> Color {
+    pub fn clay_to_raylib_color(color: &catplush_main::ObjectColor) -> Color {
         Color {
             r: color.0,
             g: color.1,
@@ -648,7 +648,7 @@ pub mod catplush_raylib {
         }
     }
 
-    pub fn raylib_to_clay_image(image: &Texture2D) -> clay_main::CatplushImageData {
+    pub fn raylib_to_clay_image(image: &Texture2D) -> catplush_main::CatplushImageData {
         let raw_image = image.load_image().unwrap().to_raw();
 
         CatplushImageData { data: raw_image.data, width: raw_image.width, height: raw_image.height, mipmaps: raw_image.mipmaps, format: raw_image.format }
