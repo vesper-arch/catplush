@@ -101,25 +101,6 @@ pub mod clay_main {
         }
     }
 
-    impl SizingMode {
-        fn get_as_float(&self) -> f32 {
-            match self {
-                // Not completely sure why the deref is necessary but no more compiler error
-                SizingMode::Fixed(size) => *size as f32,
-                SizingMode::Fit => panic!("Given that fit should have been taken care of already, this is weird error."),
-                SizingMode::Grow => 0.0,
-            }
-        }
-
-        fn get_as_int(&self) -> i32 {
-            match self {
-                SizingMode::Fixed(size) => *size,
-                SizingMode::Fit => panic!("Given that fit should have been taken care of already, this is weird error."),
-                SizingMode::Grow => 0,
-            }
-        }
-    }
-
     pub struct SizeConstraint {
         min: i32,
         max: i32
@@ -260,7 +241,6 @@ pub mod clay_main {
             Self::default()
         }
 
-
         pub fn rectangle(mut self, color: ObjectColor, corner_radius: CornerRadius) -> Self {
             self.object_type = ElementType::Rectangle;
             self.color = color;
@@ -278,14 +258,6 @@ pub mod clay_main {
         pub fn text(mut self, text: String, color: ObjectColor, font_size: u8) -> Self {
             self.object_type = ElementType::Text( text, font_size );
             self.color = color;
-            self
-        }
-
-        pub fn image(mut self, image_file: ClayImageData, tint: ObjectColor, corner_radius: CornerRadius) -> Self {
-            self.object_type = ElementType::Image( image_file );
-            self.color = tint;
-            self.corner_radius = corner_radius;
-            self.layout.sizing = Sizing{ width: SizingMode::Fixed(image_file.width), height: SizingMode::Fixed(image_file.height) };
             self
         }
 
@@ -629,9 +601,6 @@ pub mod clay_main {
 }
 
 pub mod clay_raylib {
-    use std::fmt::format;
-
-    use raylib::ffi;
     use raylib::prelude::*;
     use crate::clay_main::{self, ClayImageData};
     use crate::clay_main::{RenderCommand, RenderData};
@@ -644,7 +613,7 @@ pub mod clay_raylib {
                 RenderData::RectangleData(data) => {
                     if data.corner_radius.top_left != 0.0 {
                         let radius = (data.corner_radius.top_left * 2.0) / (if bounding_box.width > bounding_box.height { bounding_box.height } else { bounding_box.width });
-                        draw_handle.draw_rectangle_rounded(clay_to_raylib_rect(&bounding_box), radius, 8, clay_to_raylib_color(&data.color));
+                        draw_handle.draw_rectangle_rounded(clay_to_raylib_rect(&bounding_box), radius, 16, clay_to_raylib_color(&data.color));
                     } else {
                         draw_handle.draw_rectangle(bounding_box.x as i32, bounding_box.y as i32, bounding_box.width as i32, bounding_box.height as i32, clay_to_raylib_color(&data.color));
                     }
@@ -657,16 +626,9 @@ pub mod clay_raylib {
                         draw_handle.draw_rectangle_lines_ex(clay_to_raylib_rect(&bounding_box), data.width as f32, clay_to_raylib_color(&data.color));
                     }
                 }
-                RenderData::ImageData(data) => {
-                    let image = ffi::Image {data: data.data, width: data.width, height: data.height, mipmaps: data.mipmaps, format: data.format};
+                // not even sure how to handle text yet sob. Images do NOT work with this implementation. Raylib will have to be changed out.
+                RenderData::TextData(_) | RenderData::ImageData(_) => todo!()
 
-                    unsafe { // Uh huh I'm sure this will have no lasting consquences
-                        let formatted_image: Texture2D = Texture2D::from_raw(ffi::LoadTextureFromImage(image));
-                        draw_handle.draw_texture(&formatted_image, bounding_box.x as i32, bounding_box.y as i32, clay_to_raylib_color(&data.tint));
-                    }
-                }
-                // not even sure how to handle text yet sob
-                RenderData::TextData(_) => todo!()
             }
         }
     }
