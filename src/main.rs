@@ -1,20 +1,20 @@
 use rust_clayout::clay_main::*;
-use rust_clayout::clay_raylib::*;
+use rust_clayout::catplush_raylib::*;
 use raylib::prelude::*;
 
-fn template_button(button_width: i32) -> ClayElement {
-    ClayElement::new()
+fn template_button(button_width: i32) -> UiElement {
+    UiElement::new()
         .rectangle(ObjectColor(51, 136, 175, 255), CornerRadius::all(10.0))
         .sizing(SizingMode::Fixed(button_width), SizingMode::Grow)
 }
 
-fn spacer() -> ClayElement {
-    ClayElement::new()
+fn spacer() -> UiElement {
+    UiElement::new()
         .sizing(SizingMode::Grow, SizingMode::Grow)
 }
 
-fn sidebar_element() -> ClayElement {
-    ClayElement::new()
+fn sidebar_element() -> UiElement {
+    UiElement::new()
         .rectangle(ObjectColor(51, 136, 175, 255), CornerRadius::all(10.0))
         .sizing(SizingMode::Grow, SizingMode::Fixed(50))
 }
@@ -27,15 +27,15 @@ fn main() {
         .build();
 
     while !rl.window_should_close() {
-        let mut ui = ClayContext::begin_layout((rl.get_screen_width(), rl.get_screen_height()), ChildLayoutDirection::TopToBottom);
+        let mut ui = CatplushContext::begin_layout((rl.get_screen_width(), rl.get_screen_height()), ChildLayoutDirection::TopToBottom);
 
-        ui.open_element(ClayElement::new()
+        ui.open_element(UiElement::new()
             .sizing(SizingMode::Grow, SizingMode::Grow)
             .layout_direction(ChildLayoutDirection::TopToBottom)
             .padding(Padding::all(10))
             .child_gap(10));
 
-            ui.open_element(ClayElement::new()
+            ui.open_element(UiElement::new()
                 .rectangle(ObjectColor(0, 105, 143, 255), CornerRadius::all(15.0))
                 .sizing(SizingMode::Grow, SizingMode::Fixed(50))
                 .padding(Padding::all(10))
@@ -55,13 +55,13 @@ fn main() {
 
             ui.close_element();
 
-            ui.open_element(ClayElement::new()
+            ui.open_element(UiElement::new()
                 .rectangle(ObjectColor(26, 67, 87, 255), CornerRadius::all(15.0))
                 .sizing(SizingMode::Grow, SizingMode::Grow)
                 .padding(Padding::all(10))
                 .child_gap(10));
 
-                ui.open_element(ClayElement::new()
+                ui.open_element(UiElement::new()
                     .rectangle(ObjectColor(17, 36, 46, 255), CornerRadius::all(15.0))
                     .sizing(SizingMode::Fixed(200), SizingMode::Grow)
                     .layout_direction(ChildLayoutDirection::TopToBottom)
@@ -75,7 +75,7 @@ fn main() {
 
                 ui.close_element();
 
-                ui.open_element(ClayElement::new()
+                ui.open_element(UiElement::new()
                     .rectangle(ObjectColor(17, 36, 46, 255), CornerRadius::all(15.0))
                     .sizing(SizingMode::Grow, SizingMode::Grow));
                 ui.close_element();

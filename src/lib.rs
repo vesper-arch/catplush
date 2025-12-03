@@ -10,20 +10,20 @@ pub mod clay_main {
 
     // Holds all of the layout information and currently opened elements for building the ui
     // heirarchy
-    pub struct ClayContext {
+    pub struct CatplushContext {
         layout_elements: Vec<Node>,
 
         open_layout_elements: Vec<usize>
     }
 
-    impl ClayContext {
+    impl CatplushContext {
         pub fn begin_layout(window_size: (i32, i32), layout_direction: ChildLayoutDirection) -> Self {
-            let mut new_context = ClayContext {
+            let mut new_context = CatplushContext {
                 layout_elements: vec![],
                 open_layout_elements: vec![]
             };
 
-            new_context.open_element(ClayElement::new()
+            new_context.open_element(UiElement::new()
                 .sizing(SizingMode::Fixed(window_size.0), SizingMode::Fixed(window_size.1))
                 .layout_direction(layout_direction));
 
@@ -39,8 +39,8 @@ pub mod clay_main {
             Some(self.layout_elements.get_mut(last_opened_element_index).unwrap())
         }
 
-        pub fn get_all_elements(&mut self) -> Vec<&ClayElement> {
-            let mut temp: Vec<&ClayElement> = vec![];
+        pub fn get_all_elements(&mut self) -> Vec<&UiElement> {
+            let mut temp: Vec<&UiElement> = vec![];
             for node in &self.layout_elements[..] {
                 temp.push(&node.element);
             }
@@ -52,12 +52,12 @@ pub mod clay_main {
     #[derive(Default)]
     struct Node {
         parent: Option<usize>,
-        element: ClayElement,
+        element: UiElement,
         child_elements: Vec<usize>
     }
 
     impl Node {
-       fn new(element: ClayElement, parent: usize) -> Self {
+       fn new(element: UiElement, parent: usize) -> Self {
            Node {
                parent: Some(parent),
                element,
@@ -203,7 +203,7 @@ pub mod clay_main {
     }
 
     #[derive(Copy, Clone)]
-    pub struct ClayImageData {
+    pub struct CatplushImageData {
         pub(crate) data: *mut c_void,
         pub(crate) width: i32,
         pub(crate) height: i32,
@@ -218,11 +218,11 @@ pub mod clay_main {
         Rectangle,
         Border ( i32 ),
         Text ( String, u8 ),
-        Image ( ClayImageData )
+        Image ( CatplushImageData )
     }
 
     #[derive(Default)]
-    pub struct ClayElement {
+    pub struct UiElement {
         pub object_type: ElementType,
         pub id: Option<&'static str>,
         pub layout: LayoutConfig,
@@ -236,7 +236,7 @@ pub mod clay_main {
         pub(crate) final_pos_y: f32,
     }
 
-    impl ClayElement {
+    impl UiElement {
         pub fn new() -> Self {
             Self::default()
         }
@@ -297,102 +297,9 @@ pub mod clay_main {
         }
     }
 
-    //////////////////////////////////////////////////////////
-    ////////////////  Render Structures  /////////////////////
-    //////////////////////////////////////////////////////////
-
-    #[derive(Copy, Clone)]
-    pub(crate) struct BoundingBox {
-        pub(crate) x: f32,
-        pub(crate) y: f32,
-        pub(crate) width: f32,
-        pub(crate) height: f32
-    }
-
-    pub(crate) struct RectangleRenderData {
-        pub(crate) color: ObjectColor,
-        pub(crate) corner_radius: CornerRadius
-    }
-
-    pub(crate) struct BorderRenderData {
-        pub(crate) color: ObjectColor,
-        pub(crate) corner_radius: CornerRadius,
-        pub(crate) width: i32
-    }
-
-    pub(crate) struct TextRenderData {
-        pub(crate) color: ObjectColor,
-
-        pub(crate) font_size: u8,
-        pub(crate) letter_spacing: u8,
-        pub(crate) line_height: u8
-    }
-
-    pub(crate) struct ImageRenderData {
-        pub(crate) data: *mut c_void,
-        pub(crate) width: i32,
-        pub(crate) height: i32,
-        pub(crate) mipmaps: i32,
-        pub(crate) format: i32,
-
-        pub(crate) tint: ObjectColor,
-        pub(crate) corner_radius: CornerRadius
-    }
-
-    pub(crate) enum RenderData {
-        NoType,
-        RectangleData(RectangleRenderData),
-        BorderData(BorderRenderData),
-        TextData(TextRenderData),
-        ImageData(ImageRenderData)
-    }
-
-    pub struct RenderCommand {
-        pub(crate) bounding_box: BoundingBox,
-
-        pub(crate) render_data: RenderData,
-
-        pub id: &'static str,
-    }
-
-    impl ClayContext {
-        //////////// Finalizing Functions //////////////
-
-        // Solves all sizing and positioning and returns a set of render commands for passing to the
-        // renderer
-        pub fn end_layout(mut self) -> Vec<RenderCommand> {
-            self.open_layout_elements.clear();
-
-            self.size_all();
-            self.position_all();
-
-            let mut render_commands: Vec<RenderCommand> = vec![];
-            for node in &self.layout_elements[1..self.layout_elements.len()] {
-                let element = &node.element;
-                let bounding_box = BoundingBox { x: element.final_pos_x, y: element.final_pos_y, width: element.final_size_x, height: element.final_size_y };
-                let render_data = match &element.object_type {
-                    ElementType::Unset => RenderData::NoType,
-                    ElementType::Rectangle => { RenderData::RectangleData(RectangleRenderData { color: element.color, corner_radius: element.corner_radius }) },
-                    ElementType::Border(width) => { RenderData::BorderData(BorderRenderData { color: element.color, corner_radius: element.corner_radius, width: *width }) }
-                    ElementType::Text(contents, font_size) => {
-                        RenderData::TextData(TextRenderData { color: element.color, font_size: *font_size, letter_spacing: 0, line_height: 0 })
-                    },
-                    ElementType::Image(file) => {
-                        RenderData::ImageData(ImageRenderData { data: file.data, width: file.width, height: file.height, mipmaps: file.mipmaps, format: file.format, tint: element.color, corner_radius: element.corner_radius })
-                    }
-                };
-
-                let id = element.id.unwrap_or_default();
-
-                render_commands.push( RenderCommand { bounding_box, render_data, id } );
-            }
-
-            render_commands
-        }
-
+    impl CatplushContext {
         //////////// Layout Building Functions //////////////
-
-        pub fn open_element(&mut self, element: ClayElement) {
+        pub fn open_element(&mut self, element: UiElement) {
             let new_element_index = self.layout_elements.len();
             let mut parent_element: usize = 0;
 
@@ -597,12 +504,102 @@ pub mod clay_main {
                 self.position_along_axis(left_to_right, child);
             }
         }
+
+        // Solves all sizing and positioning and returns a set of render commands for passing to the
+        // renderer
+        pub fn end_layout(mut self) -> Vec<RenderCommand> {
+            self.open_layout_elements.clear();
+
+            self.size_all();
+            self.position_all();
+
+            let mut render_commands: Vec<RenderCommand> = vec![];
+            for node in &self.layout_elements[1..self.layout_elements.len()] {
+                let element = &node.element;
+                let bounding_box = BoundingBox { x: element.final_pos_x, y: element.final_pos_y, width: element.final_size_x, height: element.final_size_y };
+                let render_data = match &element.object_type {
+                    ElementType::Unset => RenderData::NoType,
+                    ElementType::Rectangle => { RenderData::RectangleData(RectangleRenderData { color: element.color, corner_radius: element.corner_radius }) },
+                    ElementType::Border(width) => { RenderData::BorderData(BorderRenderData { color: element.color, corner_radius: element.corner_radius, width: *width }) }
+                    ElementType::Text(contents, font_size) => {
+                        RenderData::TextData(TextRenderData { color: element.color, font_size: *font_size, letter_spacing: 0, line_height: 0 })
+                    },
+                    ElementType::Image(file) => {
+                        RenderData::ImageData(ImageRenderData { data: file.data, width: file.width, height: file.height, mipmaps: file.mipmaps, format: file.format, tint: element.color, corner_radius: element.corner_radius })
+                    }
+                };
+
+                let id = element.id.unwrap_or_default();
+
+                render_commands.push( RenderCommand { bounding_box, render_data, id } );
+            }
+
+            render_commands
+        }
+    }
+
+    //////////////////////////////////////////////////////////
+    ////////////////  Render Structures  /////////////////////
+    //////////////////////////////////////////////////////////
+
+    #[derive(Copy, Clone)]
+    pub(crate) struct BoundingBox {
+        pub(crate) x: f32,
+        pub(crate) y: f32,
+        pub(crate) width: f32,
+        pub(crate) height: f32
+    }
+
+    pub(crate) struct RectangleRenderData {
+        pub(crate) color: ObjectColor,
+        pub(crate) corner_radius: CornerRadius
+    }
+
+    pub(crate) struct BorderRenderData {
+        pub(crate) color: ObjectColor,
+        pub(crate) corner_radius: CornerRadius,
+        pub(crate) width: i32
+    }
+
+    pub(crate) struct TextRenderData {
+        pub(crate) color: ObjectColor,
+
+        pub(crate) font_size: u8,
+        pub(crate) letter_spacing: u8,
+        pub(crate) line_height: u8
+    }
+
+    pub(crate) struct ImageRenderData {
+        pub(crate) data: *mut c_void,
+        pub(crate) width: i32,
+        pub(crate) height: i32,
+        pub(crate) mipmaps: i32,
+        pub(crate) format: i32,
+
+        pub(crate) tint: ObjectColor,
+        pub(crate) corner_radius: CornerRadius
+    }
+
+    pub(crate) enum RenderData {
+        NoType,
+        RectangleData(RectangleRenderData),
+        BorderData(BorderRenderData),
+        TextData(TextRenderData),
+        ImageData(ImageRenderData)
+    }
+
+    pub struct RenderCommand {
+        pub(crate) bounding_box: BoundingBox,
+
+        pub(crate) render_data: RenderData,
+
+        pub id: &'static str,
     }
 }
 
-pub mod clay_raylib {
+pub mod catplush_raylib {
     use raylib::prelude::*;
-    use crate::clay_main::{self, ClayImageData};
+    use crate::clay_main::{self, CatplushImageData};
     use crate::clay_main::{RenderCommand, RenderData};
 
     pub fn raylib_render_all(render_commands: Vec<RenderCommand>, draw_handle: &mut RaylibDrawHandle<'_>) {
@@ -651,10 +648,10 @@ pub mod clay_raylib {
         }
     }
 
-    pub fn raylib_to_clay_image(image: &Texture2D) -> clay_main::ClayImageData {
+    pub fn raylib_to_clay_image(image: &Texture2D) -> clay_main::CatplushImageData {
         let raw_image = image.load_image().unwrap().to_raw();
 
-        ClayImageData { data: raw_image.data, width: raw_image.width, height: raw_image.height, mipmaps: raw_image.mipmaps, format: raw_image.format }
+        CatplushImageData { data: raw_image.data, width: raw_image.width, height: raw_image.height, mipmaps: raw_image.mipmaps, format: raw_image.format }
     }
 }
 
