@@ -1,4 +1,3 @@
-
 pub mod catplush_main {
     /////////////////////////////////////////////////////////////////
     //////////////// UI Heirarchy Data Structures ///////////////////
@@ -6,16 +5,17 @@ pub mod catplush_main {
 
     use std::{cmp::Ordering};
     use std::ffi::c_void;
+    use glam::{Vec2, Vec4};
 
     // Holds all of the layout information and currently opened elements for building the ui
     // heirarchy
-    pub struct CatplushContext {
-        layout_elements: Vec<Node>,
+    pub struct CatplushContext<'a> {
+        layout_elements: Vec<Node<'a>>,
 
         open_layout_elements: Vec<usize>
     }
 
-    impl CatplushContext {
+    impl CatplushContext<'_> {
         pub fn begin_layout(window_size: (i32, i32), layout_direction: ChildLayoutDirection) -> Self {
             let mut new_context = CatplushContext {
                 layout_elements: vec![],
@@ -43,14 +43,14 @@ pub mod catplush_main {
 
 
     #[derive(Default)]
-    struct Node {
+    struct Node<'a> {
         parent: Option<usize>,
-        element: UiElement,
+        element: UiElement<'a>,
         child_elements: Vec<usize>
     }
 
-    impl Node {
-       fn new(element: UiElement, parent: usize) -> Self {
+    impl<'a> Node<'a> {
+       fn new(element: UiElement<'a>, parent: usize) -> Self {
            Node {
                parent: Some(parent),
                element,
@@ -65,6 +65,12 @@ pub mod catplush_main {
 
     #[derive(Default, Copy, Clone)]
     pub struct ObjectColor( pub u8, pub u8, pub u8, pub u8 );
+
+    impl ObjectColor {
+        pub fn as_u32(&self) -> u32 {
+            u32::from_be_bytes([self.0, self.1, self.2, self.3])
+        }
+    }
 
     #[derive(PartialEq)]
     pub enum ChildLayoutDirection {
@@ -120,6 +126,32 @@ pub mod catplush_main {
 
         pub fn all(radius: f32) -> Self {
             CornerRadius {top_right: radius, top_left: radius, bottom_left: radius, bottom_right: radius}
+        }
+
+        pub fn as_vec4(&self) -> Vec4 {
+            Vec4::new(self.top_right, self.top_left, self.bottom_left, self.bottom_right)
+        }
+    }
+
+    #[derive(Default, Copy, Clone)]
+    pub struct BorderWidth {
+        pub left: i32,
+        pub right: i32,
+        pub top: i32,
+        pub bottom: i32
+    }
+
+    impl BorderWidth {
+        pub fn new(left: i32, right: i32, top: i32, bottom: i32) -> Self {
+            BorderWidth {left, right, top, bottom}
+        }
+
+        pub fn all(width: i32) -> Self {
+            BorderWidth {left: width, right: width, top: width, bottom: width}
+        }
+
+        pub fn as_vec4(&self) -> Vec4 {
+            Vec4::new(self.left as f32, self.right as f32, self.top as f32, self.bottom as f32)
         }
     }
 
@@ -196,32 +228,31 @@ pub mod catplush_main {
     }
 
     #[derive(Copy, Clone)]
-    pub struct CatplushImageData {
-        pub(crate) data: *mut c_void,
+    pub struct CatplushImageData<'a> {
+        pub(crate) data: &'a[u8],
         pub(crate) width: i32,
         pub(crate) height: i32,
-        pub(crate) mipmaps: i32,
-        pub(crate) format: i32
     }
 
     #[derive(Default)]
-    pub enum ElementType {
+    pub enum ElementType<'a> {
         #[default]
         Unset,
         Rectangle,
-        Border ( i32 ),
         Text ( String, u8 ),
-        Image ( CatplushImageData )
+        Image ( CatplushImageData<'a> )
     }
 
     #[derive(Default)]
-    pub struct UiElement {
-        pub object_type: ElementType,
+    pub struct UiElement<'a> {
+        pub object_type: ElementType<'a>,
         pub id: Option<&'static str>,
         pub layout: LayoutConfig,
 
         pub color: ObjectColor,
+        pub stroke_color: ObjectColor,
         pub corner_radius: CornerRadius,
+        pub border_width: BorderWidth,
 
         pub(crate) final_size_x: f32,
         pub(crate) final_size_y: f32,
@@ -229,7 +260,7 @@ pub mod catplush_main {
         pub(crate) final_pos_y: f32,
     }
 
-    impl UiElement {
+    impl UiElement<'_> {
         pub fn new() -> Self {
             Self::default()
         }
@@ -241,10 +272,11 @@ pub mod catplush_main {
             self
         }
 
-        pub fn border(mut self, color: ObjectColor, corner_radius: CornerRadius, border_width: i32) -> Self {
-            self.object_type = ElementType::Border(border_width);
-            self.color = color;
+        pub fn border(mut self, color: ObjectColor, stroke_color: ObjectColor, corner_radius: CornerRadius, border_width: BorderWidth) -> Self {
+            self.border_width = border_width;
             self.corner_radius = corner_radius;
+            self.color = color;
+            self.stroke_color = stroke_color;
             self
         }
 
@@ -290,9 +322,9 @@ pub mod catplush_main {
         }
     }
 
-    impl CatplushContext {
+    impl<'a> CatplushContext<'a> {
         //////////// Layout Building Functions //////////////
-        pub fn open_element(&mut self, element: UiElement) {
+        pub fn open_element(&'a mut self, element: UiElement<'a>) {
             let new_element_index = self.layout_elements.len();
             let mut parent_element: usize = 0;
 
@@ -497,7 +529,7 @@ pub mod catplush_main {
 
         // Solves all sizing and positioning and returns a set of render commands for passing to the
         // renderer
-        pub fn end_layout(mut self) -> Vec<RenderCommand> {
+        pub fn end_layout<'a>(mut self) -> Vec<RenderCommand<'a>> {
             self.open_layout_elements.clear();
 
             self.size_all();
@@ -509,13 +541,14 @@ pub mod catplush_main {
                 let bounding_box = BoundingBox { x: element.final_pos_x, y: element.final_pos_y, width: element.final_size_x, height: element.final_size_y };
                 let render_data = match &element.object_type {
                     ElementType::Unset => RenderData::NoType,
-                    ElementType::Rectangle => { RenderData::RectangleData(RectangleRenderData { color: element.color, corner_radius: element.corner_radius }) },
-                    ElementType::Border(width) => { RenderData::BorderData(BorderRenderData { color: element.color, corner_radius: element.corner_radius, width: *width }) }
+                    ElementType::Rectangle => {
+                        RenderData::RectangleData(RectangleRenderData { color: element.color, stroke_color: element.stroke_color, corner_radius: element.corner_radius, border_width: element.border_width })
+                    },
                     ElementType::Text(contents, font_size) => {
                         RenderData::TextData(TextRenderData { color: element.color, font_size: *font_size, letter_spacing: 0, line_height: 0 })
                     },
                     ElementType::Image(file) => {
-                        RenderData::ImageData(ImageRenderData { data: file.data, width: file.width, height: file.height, mipmaps: file.mipmaps, format: file.format, tint: element.color, corner_radius: element.corner_radius })
+                        RenderData::ImageData(ImageRenderData { data: file.data, width: file.width, height: file.height })
                     }
                 };
 
@@ -542,14 +575,11 @@ pub mod catplush_main {
 
     pub(crate) struct RectangleRenderData {
         pub(crate) color: ObjectColor,
-        pub(crate) corner_radius: CornerRadius
+        pub(crate) stroke_color: ObjectColor,
+        pub(crate) corner_radius: CornerRadius,
+        pub(crate) border_width: BorderWidth
     }
 
-    pub(crate) struct BorderRenderData {
-        pub(crate) color: ObjectColor,
-        pub(crate) corner_radius: CornerRadius,
-        pub(crate) width: i32
-    }
 
     pub(crate) struct TextRenderData {
         pub(crate) color: ObjectColor,
@@ -559,88 +589,68 @@ pub mod catplush_main {
         pub(crate) line_height: u8
     }
 
-    pub(crate) struct ImageRenderData {
-        pub(crate) data: *mut c_void,
+    pub(crate) struct ImageRenderData<'a> {
+        pub(crate) data: &'a[u8],
         pub(crate) width: i32,
         pub(crate) height: i32,
-        pub(crate) mipmaps: i32,
-        pub(crate) format: i32,
 
-        pub(crate) tint: ObjectColor,
-        pub(crate) corner_radius: CornerRadius
+        // Need to implement these myself.
+        // pub(crate) tint: ObjectColor,
+        // pub(crate) corner_radius: CornerRadius
     }
 
-    pub(crate) enum RenderData {
+    pub(crate) enum RenderData<'a> {
         NoType,
         RectangleData(RectangleRenderData),
-        BorderData(BorderRenderData),
         TextData(TextRenderData),
-        ImageData(ImageRenderData)
+        ImageData(ImageRenderData<'a>)
     }
 
-    pub struct RenderCommand {
+    pub struct RenderCommand<'a> {
         pub(crate) bounding_box: BoundingBox,
 
-        pub(crate) render_data: RenderData,
+        pub(crate) render_data: RenderData<'a>,
 
         pub id: &'static str,
     }
 }
 
 pub mod catplush_raylib {
-    use raylib::prelude::*;
-    use crate::catplush_main::{self, CatplushImageData};
-    use crate::catplush_main::{RenderCommand, RenderData};
+    use crate::catplush_main::*;
+    use frienderer::{TextLayout, RawImage, Renderer};
+    use parley::{Alignment, FontContext, FontStack, LayoutContext, LineHeight, StyleProperty};
+    use image::ImageFormat;
+    use glow::{NativeTexture};
+    use glam::{Vec2};
 
-    pub fn raylib_render_all(render_commands: Vec<RenderCommand>, draw_handle: &mut RaylibDrawHandle<'_>) {
-        for command in render_commands {
-            let bounding_box = command.bounding_box;
-            match command.render_data {
-                RenderData::NoType => {},
-                RenderData::RectangleData(data) => {
-                    if data.corner_radius.top_left != 0.0 {
-                        let radius = (data.corner_radius.top_left * 2.0) / (if bounding_box.width > bounding_box.height { bounding_box.height } else { bounding_box.width });
-                        draw_handle.draw_rectangle_rounded(plush_to_raylib_rect(&bounding_box), radius, 16, plush_to_raylib_color(&data.color));
-                    } else {
-                        draw_handle.draw_rectangle(bounding_box.x as i32, bounding_box.y as i32, bounding_box.width as i32, bounding_box.height as i32, plush_to_raylib_color(&data.color));
-                    }
-                }
-                RenderData::BorderData(data) => {
-                    if data.corner_radius.top_left != 0.0 {
-                        let radius = (data.corner_radius.top_left * 2.0) / (if bounding_box.width > bounding_box.height { bounding_box.height } else { bounding_box.width });
-                        draw_handle.draw_rectangle_rounded_lines_ex(plush_to_raylib_rect(&bounding_box), radius, 8, data.width as f32, plush_to_raylib_color(&data.color));
-                    } else {
-                        draw_handle.draw_rectangle_lines_ex(plush_to_raylib_rect(&bounding_box), data.width as f32, plush_to_raylib_color(&data.color));
-                    }
-                }
-                // not even sure how to handle text yet sob. Images do NOT work with this implementation. Raylib will have to be changed out.
-                RenderData::TextData(_) | RenderData::ImageData(_) => todo!()
-
-            }
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_text(layout_context: &mut LayoutContext<()>, mut font_context: FontContext, text: &str, font_stack: &str, line_height: f32, font_size: f32, alignment: Alignment, color: ObjectColor, scale: f32) -> TextLayout {
+        let mut builder = layout_context.ranged_builder(&mut font_context, text, scale, true);
+        {
+            builder.push_default(FontStack::from(font_stack));
+            builder.push_default(StyleProperty::LineHeight(LineHeight::FontSizeRelative(line_height)));
+            builder.push_default(StyleProperty::FontSize(font_size));
         }
+        TextLayout::new(builder.build(text), alignment, color.as_u32(), scale)
     }
 
-    pub(crate) fn plush_to_raylib_rect(object: &catplush_main::BoundingBox) -> Rectangle {
-        Rectangle {
-            x: object.x,
-            y: object.y,
-            width: object.width,
-            height: object.height
-        }
+    pub fn load_texture(renderer: Renderer, image_bytes: &[u8], format: ImageFormat) -> NativeTexture {
+        let opengl_image = image::load_from_memory_with_format(image_bytes, format).unwrap();
+        renderer.upload_texture(RawImage {
+            width: opengl_image.width(),
+            height: opengl_image.height(),
+            pixels: opengl_image.as_bytes()
+        })
     }
 
-    pub fn plush_to_raylib_color(color: &catplush_main::ObjectColor) -> Color {
-        Color {
-            r: color.0,
-            g: color.1,
-            b: color.2,
-            a: color.3
+    pub fn plush_to_frend_rect(rectangle: UiElement) -> frienderer::RRect {
+        frienderer::RRect {
+            pos: Vec2::new(rectangle.final_pos_x, rectangle.final_pos_y),
+            size: Vec2::new(rectangle.final_size_x, rectangle.final_size_y),
+            border_radius: rectangle.corner_radius.as_vec4(),
+            border_width: rectangle.border_width.as_vec4(),
+            fill_color: rectangle.color.as_u32(),
+            stroke_color: rectangle.stroke_color.as_u32()
         }
-    }
-
-    pub fn raylib_to_plush_image(image: &Texture2D) -> catplush_main::CatplushImageData {
-        let raw_image = image.load_image().unwrap().to_raw();
-
-        CatplushImageData { data: raw_image.data, width: raw_image.width, height: raw_image.height, mipmaps: raw_image.mipmaps, format: raw_image.format }
     }
 }
