@@ -389,7 +389,7 @@ pub mod catplush_main {
             // Fit Sizing
             if parent_node.element.layout.sizing.width == SizingMode::Fit || parent_node.element.layout.sizing.width == SizingMode::Grow {
                 if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
-                    parent_node.element.final_size_x += child_gap as f32;
+                    parent_node.element.final_size_x += child_gap as f32/2.0;
                     parent_node.element.final_size_x += closing_node.element.final_size_x;
                 } else {
                     parent_node.element.final_size_x = f32::max(closing_node.element.final_size_x, parent_node.element.final_size_x)
@@ -400,7 +400,7 @@ pub mod catplush_main {
                 if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
                     parent_node.element.final_size_y = f32::max(closing_node.element.final_size_y, parent_node.element.final_size_y);
                 } else {
-                    parent_node.element.final_size_y += child_gap as f32;
+                    parent_node.element.final_size_y += child_gap as f32/2.0;
                     parent_node.element.final_size_y += closing_node.element.final_size_y;
                 }
             }
