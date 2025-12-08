@@ -69,6 +69,14 @@ pub mod catplush_main {
         pub fn as_u32(&self) -> u32 {
             u32::from_be_bytes([self.0, self.1, self.2, self.3])
         }
+
+        pub fn transparent() -> Self { ObjectColor(0, 0, 0, 0) }
+
+        pub fn black() -> Self { ObjectColor(0  , 0  , 0  , 255) }
+        pub fn white() -> Self { ObjectColor(255, 255, 255, 255) }
+        pub fn red()   -> Self { ObjectColor(255, 0  , 0  , 255) }
+        pub fn green() -> Self { ObjectColor(0  , 255, 0  , 255) }
+        pub fn blue()  -> Self { ObjectColor(0  , 0  , 255, 255) }
     }
 
     #[derive(PartialEq)]
@@ -113,44 +121,44 @@ pub mod catplush_main {
     #[derive(Default, Copy, Clone)]
     pub struct CornerRadius {
         pub top_right: f32,
-        pub top_left: f32,
+        pub bottom_right: f32,
         pub bottom_left: f32,
-        pub bottom_right: f32
+        pub top_left: f32
     }
 
     impl CornerRadius {
-        pub fn new(top_right: f32, top_left: f32, bottom_left: f32, bottom_right: f32) -> Self {
-            CornerRadius {top_right, top_left, bottom_left, bottom_right}
+        pub fn new(top_right: f32, bottom_right: f32, bottom_left: f32, top_left: f32) -> Self {
+            CornerRadius {top_right, bottom_right, bottom_left, top_left}
         }
 
         pub fn all(radius: f32) -> Self {
-            CornerRadius {top_right: radius, top_left: radius, bottom_left: radius, bottom_right: radius}
+            CornerRadius {top_right: radius, bottom_right: radius, bottom_left: radius, top_left: radius}
         }
 
         pub fn as_vec4(&self) -> Vec4 {
-            Vec4::new(self.top_right, self.top_left, self.bottom_left, self.bottom_right)
+            Vec4::new(self.top_right, self.bottom_right, self.bottom_left, self.top_left)
         }
     }
 
     #[derive(Default, Copy, Clone)]
     pub struct BorderWidth {
-        pub left: i32,
-        pub right: i32,
         pub top: i32,
-        pub bottom: i32
+        pub right: i32,
+        pub bottom: i32,
+        pub left: i32
     }
 
     impl BorderWidth {
-        pub fn new(left: i32, right: i32, top: i32, bottom: i32) -> Self {
-            BorderWidth {left, right, top, bottom}
+        pub fn new(top: i32, right: i32, bottom: i32, left: i32) -> Self {
+            BorderWidth {top, right, bottom, left}
         }
 
         pub fn all(width: i32) -> Self {
-            BorderWidth {left: width, right: width, top: width, bottom: width}
+            BorderWidth {top: width, right: width, bottom: width, left: width}
         }
 
         pub fn as_vec4(&self) -> Vec4 {
-            Vec4::new(self.left as f32, self.right as f32, self.top as f32, self.bottom as f32)
+            Vec4::new(self.top as f32, self.right as f32, self.bottom as f32, self.left as f32)
         }
     }
 
@@ -175,20 +183,20 @@ pub mod catplush_main {
         }
     }
 
-    #[derive(Default)]
+    #[derive(Default, PartialEq)]
     pub enum ChildXAlignment {
         #[default]
-        AlignXLeft,
-        AlignXCenter,
-        AlignXRight
+        Left,
+        Center,
+        Right
     }
 
-    #[derive(Default)]
+    #[derive(Default, PartialEq)]
     pub enum ChildYAlignment {
         #[default]
-        AlignYTop,
-        AlignYCenter,
-        AlignYBottom
+        Top,
+        Center,
+        Bottom
     }
 
     #[derive(Default)]
@@ -201,7 +209,6 @@ pub mod catplush_main {
         pub fn new(x_align: ChildXAlignment, y_align: ChildYAlignment) -> Self {
             ChildAlignment {x: x_align, y: y_align}
         }
-
     }
 
     pub struct LayoutConfig {
@@ -278,10 +285,8 @@ pub mod catplush_main {
             self
         }
 
-        pub fn border(mut self, color: ObjectColor, stroke_color: ObjectColor, corner_radius: CornerRadius, border_width: BorderWidth) -> Self {
+        pub fn border(mut self, stroke_color: ObjectColor, border_width: BorderWidth) -> Self {
             self.border_width = border_width;
-            self.corner_radius = corner_radius;
-            self.color = color;
             self.stroke_color = stroke_color;
             self
         }
@@ -533,6 +538,82 @@ pub mod catplush_main {
                     total_child_offset += self.layout_elements[child].element.final_size_y;
                 }
                 child_num += 1;
+            }
+
+            let aligning_along_axis =
+                if left_to_right { self.layout_elements[current_index].element.layout.layout_direction == ChildLayoutDirection::LeftToRight
+                   && self.layout_elements[current_index].element.layout.child_alignment.x != ChildXAlignment::Left }
+                else { self.layout_elements[current_index].element.layout.layout_direction == ChildLayoutDirection::TopToBottom
+                    && self.layout_elements[current_index].element.layout.child_alignment.y != ChildYAlignment::Top };
+
+            let padding =
+                if left_to_right {self.layout_elements[current_index].element.layout.padding.left + self.layout_elements[current_index].element.layout.padding.right}
+                else { self.layout_elements[current_index].element.layout.padding.top + self.layout_elements[current_index].element.layout.padding.bottom };
+            let child_gap = (self.layout_elements[current_index].child_elements.len() as i32 - 1) * self.layout_elements[current_index].element.layout.child_gap;
+            let parent_size = if left_to_right {self.layout_elements[current_index].element.final_size_x} else {self.layout_elements[current_index].element.final_size_y};
+
+            let mut inner_content_size = 0.0;
+            for child in self.layout_elements[current_index].child_elements.clone() {
+                if left_to_right {
+                    inner_content_size += self.layout_elements[child].element.final_size_x;
+                } else {
+                    inner_content_size += self.layout_elements[child].element.final_size_y;
+                }
+            }
+
+            if aligning_along_axis {
+                let distance_to_add = parent_size - padding as f32 - child_gap as f32 - inner_content_size;
+                for child_index in self.layout_elements[current_index].child_elements.clone() {
+                    if left_to_right {
+                        match self.layout_elements[current_index].element.layout.child_alignment.x {
+                            ChildXAlignment::Left => {},
+                            ChildXAlignment::Center => {
+                                self.layout_elements[child_index].element.final_pos_x += distance_to_add/2.0
+                            },
+                            ChildXAlignment::Right => {
+                                self.layout_elements[child_index].element.final_pos_x += distance_to_add
+                            },
+                        }
+                    } else {
+                        match self.layout_elements[current_index].element.layout.child_alignment.y {
+                            ChildYAlignment::Top => {},
+                            ChildYAlignment::Center => {
+                                self.layout_elements[child_index].element.final_pos_y += distance_to_add/2.0;
+                            },
+                            ChildYAlignment::Bottom => {
+                                self.layout_elements[child_index].element.final_pos_y += distance_to_add;
+                            },
+                        }
+                    }
+                }
+            } else {
+                for child_index in self.layout_elements[current_index].child_elements.clone() {
+                    let distance_to_add =
+                        if left_to_right { parent_size - padding as f32 - self.layout_elements[child_index].element.final_size_x }
+                        else { parent_size - padding as f32 - self.layout_elements[child_index].element.final_size_y };
+
+                    if left_to_right {
+                        match self.layout_elements[current_index].element.layout.child_alignment.x {
+                            ChildXAlignment::Left => {},
+                            ChildXAlignment::Center => {
+                                self.layout_elements[child_index].element.final_pos_x += distance_to_add/2.0;
+                            },
+                            ChildXAlignment::Right => {
+                                self.layout_elements[child_index].element.final_pos_x += distance_to_add;
+                            },
+                        }
+                    } else {
+                        match self.layout_elements[current_index].element.layout.child_alignment.y {
+                            ChildYAlignment::Top => {},
+                            ChildYAlignment::Center => {
+                                self.layout_elements[child_index].element.final_pos_y += distance_to_add/2.0;
+                            },
+                            ChildYAlignment::Bottom => {
+                                self.layout_elements[child_index].element.final_pos_y += distance_to_add;
+                            },
+                        }
+                    }
+                }
             }
 
             for child in self.layout_elements[current_index].child_elements.clone() {

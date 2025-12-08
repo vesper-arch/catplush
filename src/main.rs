@@ -5,7 +5,7 @@ use glam::{ivec2};
 use glfw::{Action, Context, Key, OpenGlProfileHint, WindowHint};
 use image::ImageFormat;
 
-fn template_button(button_width: i32) -> UiElement {
+fn topbar_button(button_width: i32) -> UiElement {
     UiElement::new()
         .rectangle(ObjectColor(51, 136, 175, 255), CornerRadius::all(10.0))
         .sizing(SizingMode::Fixed(button_width), SizingMode::Grow)
@@ -22,6 +22,10 @@ fn sidebar_element() -> UiElement {
         .sizing(SizingMode::Grow, SizingMode::Fixed(50))
 }
 
+const CONTRAST_HIGHLIGHT: ObjectColor = ObjectColor(238, 190, 43, 255);
+const MONOCHROME_HIGHLIGHT: ObjectColor = ObjectColor(125, 209, 238, 255);
+const DARK_BORDER: ObjectColor = ObjectColor(33, 61, 77, 255);
+
 const CARD_IMAGE: &[u8] = include_bytes!("../resources/CardIcon_Watcher_Skill_Rare.png");
 const AWAKENED_IMAGE: &[u8] = include_bytes!("../resources/Achv-Awakened.png");
 
@@ -33,7 +37,7 @@ fn main() {
 	glfw.window_hint(WindowHint::TransparentFramebuffer(true));
 
 	let (mut window, events) = glfw
-		.create_window(800, 600, "LETS FUCKING GOOOOOOOOO", glfw::WindowMode::Windowed)
+		.create_window(800, 380, "LETS FUCKING GOOOOOOOOO", glfw::WindowMode::Windowed)
 		.expect("Failed to create GLFW window.");
 
 	window.set_key_polling(true);
@@ -63,7 +67,7 @@ fn main() {
 	});
 
 	let awakened_image = image::load_from_memory_with_format(AWAKENED_IMAGE, ImageFormat::Png).unwrap();
-	let awakaned_texture = renderer.upload_texture(RawImage {
+	let awakened_texture = renderer.upload_texture(RawImage {
 	    width: awakened_image.width(),
 		height: awakened_image.height(),
 		pixels: awakened_image.as_bytes()
@@ -78,7 +82,7 @@ fn main() {
                 _ => {}
             }
         }
-        renderer.resize(window.get_size().0, window.get_size().1, 1.0);
+        renderer.resize(window.get_size().0, window.get_size().1, scale_factor);
 
         let mut ui = CatplushContext::begin_layout(window.get_size(), ChildLayoutDirection::TopToBottom);
 
@@ -90,27 +94,29 @@ fn main() {
             .child_gap(10));
 
             ui.open_element(UiElement::new()
-                .rectangle(ObjectColor(0, 105, 143, 255), CornerRadius::all(15.0))
+                .rectangle(ObjectColor(0, 105, 143, 255), CornerRadius::all(17.0))
+                .border(DARK_BORDER, BorderWidth::all(3))
                 .sizing(SizingMode::Grow, SizingMode::Fixed(50))
                 .padding(Padding::all(10))
                 .child_gap(10));
 
-                ui.open_element(template_button(100));
+                ui.open_element(topbar_button(100)
+                    .border(MONOCHROME_HIGHLIGHT, BorderWidth::all(2)));
                 ui.close_element();
 
-                ui.open_element(template_button(75));
+                ui.open_element(topbar_button(75));
                 ui.close_element();
 
                 ui.open_element(spacer());
                 ui.close_element();
 
-                ui.open_element(template_button(75));
+                ui.open_element(topbar_button(75));
                 ui.close_element();
 
             ui.close_element();
 
             ui.open_element(UiElement::new()
-                .rectangle(ObjectColor(26, 67, 87, 255), CornerRadius::all(15.0))
+                .rectangle(ObjectColor(26, 67, 87, 255), CornerRadius::all(20.0))
                 .sizing(SizingMode::Grow, SizingMode::Grow)
                 .padding(Padding::all(10))
                 .child_gap(10));
@@ -119,6 +125,7 @@ fn main() {
                     .rectangle(ObjectColor(17, 36, 46, 255), CornerRadius::all(15.0))
                     .sizing(SizingMode::Fixed(200), SizingMode::Grow)
                     .layout_direction(ChildLayoutDirection::TopToBottom)
+                    .alignment(ChildXAlignment::Left, ChildYAlignment::Center)
                     .padding(Padding::all(10))
                     .child_gap(10));
 
@@ -131,7 +138,10 @@ fn main() {
 
                 ui.open_element(UiElement::new()
                     .rectangle(ObjectColor(17, 36, 46, 255), CornerRadius::all(15.0))
+                    .border(CONTRAST_HIGHLIGHT, BorderWidth::all(3))
                     .sizing(SizingMode::Grow, SizingMode::Grow)
+                    .alignment(ChildXAlignment::Center, ChildYAlignment::Top)
+                    .layout_direction(ChildLayoutDirection::LeftToRight)
                     .padding(Padding::all(10))
                     .child_gap(10));
 
@@ -140,7 +150,7 @@ fn main() {
                     ui.close_element();
 
                     ui.open_element(UiElement::new()
-                        .image(get_texture_id(&awakaned_texture), awakened_image.width() as i32, awakened_image.height() as i32));
+                        .image(get_texture_id(&awakened_texture), awakened_image.width() as i32, awakened_image.height() as i32));
                     ui.close_element();
 
                 ui.close_element();
