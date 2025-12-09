@@ -358,6 +358,8 @@ pub mod catplush_main {
         pub fn close_element(&mut self) {
             // Naturally gets called in Depth First Order so we can do fixed sizing and fit sizing
             // widths right here
+
+            // This function currently does both widths and heights in one pass, which will change once text wrapping is implemented.
             if self.open_layout_elements.len() <= 1 {
                 return
             }

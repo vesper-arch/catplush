@@ -15,6 +15,9 @@ More on this as the story develops.
 
 I mean I might as well.
 
+
+Big thank you to Speykious for letting me use his `frienderer` crate.
+
 ---
 The original Clay code can be found here:
 
