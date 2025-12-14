@@ -22,9 +22,9 @@ fn sidebar_element() -> UiElement {
         .sizing(SizingMode::Grow, SizingMode::Fixed(50))
 }
 
-const CONTRAST_HIGHLIGHT: ObjectColor = ObjectColor(238, 190, 43, 255);
-const MONOCHROME_HIGHLIGHT: ObjectColor = ObjectColor(125, 209, 238, 255);
-const DARK_BORDER: ObjectColor = ObjectColor(33, 61, 77, 255);
+const CONTRAST_HIGHLIGHT: ObjectColor = ObjectColor::from_u32_hex(0xeebe2bff);
+const MONOCHROME_HIGHLIGHT: ObjectColor = ObjectColor::from_u32_hex(0x7dd1eeff);
+const DARK_BORDER: ObjectColor = ObjectColor::from_u32_hex(0x213d4dff);
 
 const CARD_IMAGE: &[u8] = include_bytes!("../resources/CardIcon_Watcher_Skill_Rare.png");
 const AWAKENED_IMAGE: &[u8] = include_bytes!("../resources/Achv-Awakened.png");

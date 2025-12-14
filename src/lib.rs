@@ -70,6 +70,12 @@ pub mod catplush_main {
             u32::from_be_bytes([self.0, self.1, self.2, self.3])
         }
 
+        /// 0xrrggbbaa
+        pub const fn from_u32_hex(hex_code: u32) -> Self {
+            let [r, g, b, a] = hex_code.to_be_bytes();
+            Self (r, g, b, a)
+        }
+
         pub fn transparent() -> Self { ObjectColor(0, 0, 0, 0) }
 
         pub fn black() -> Self { ObjectColor(0  , 0  , 0  , 255) }
@@ -775,18 +781,12 @@ pub mod catplush_friend {
 
     pub fn get_texture_id(texture: &NativeTexture) -> NonZeroU32 { texture.0 }
 
-    // pub fn plush_to_frend_rect(rectangle: BoundingBox, corner_radius) -> frienderer::RRect {
-    //     frienderer::RRect {
-    //         pos: Vec2::new(rectangle.final_pos_x, rectangle.final_pos_y),
-    //         size: Vec2::new(rectangle.final_size_x, rectangle.final_size_y),
-    //         border_radius: rectangle.corner_radius.as_vec4(),
-    //         border_width: rectangle.border_width.as_vec4(),
-    //         fill_color: rectangle.color.as_u32(),
-    //         stroke_color: rectangle.stroke_color.as_u32()
-    //     }
-    // }
-
-    // pub fn frend_to_plush_text(text: &str, text_layout: TextLayout) -> CatplushTextData {
-    //     CatplushTextData { text: text.to_owned(), font_stack: (), line_height: (), font_size: () }
-    // }
+    pub fn load_frienderer_texture(renderer: &mut Renderer, image_data: &[u8], format: ImageFormat) -> (NativeTexture, u32, u32) {
+        let image = image::load_from_memory_with_format(image_data, format).unwrap();
+        (renderer.upload_texture(RawImage {
+            width: image.width(),
+            height: image.height(),
+            pixels: image.as_bytes()
+        }), image.height(), image.width())
+    }
 }
