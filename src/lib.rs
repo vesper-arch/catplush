@@ -1,6 +1,6 @@
 pub mod catplush_main {
     use std::{cmp::Ordering, num::{NonZeroU32}};
-    use glam::{Vec4};
+    use glam::{Vec4, Vec2};
 
     /////////////////////////////////////////////////////////////////
     //////////////// UI Heirarchy Data Structures ///////////////////
@@ -247,10 +247,8 @@ pub mod catplush_main {
     }
 
     pub struct CatplushTextData {
-        pub(crate) text: String,
-        pub(crate) font_stack: String,
-        pub(crate) line_height: f32,
-        pub(crate) font_size: f32
+        pub(crate) bitmap: BitmapConfiguration,
+        pub(crate) text: String
     }
 
     #[derive(Default)]
@@ -303,9 +301,8 @@ pub mod catplush_main {
             self
         }
 
-        pub fn text(mut self, text: &str, color: ObjectColor, font_stack: &str, font_size: f32, line_height: f32) -> Self {
-            self.object_type = ObjectType::Text( CatplushTextData { text: text.to_owned(), font_stack: font_stack.to_owned(), line_height, font_size } );
-            self.color = color;
+        pub fn text(mut self, bitmap: BitmapConfiguration, text: &str) -> Self {
+            self.object_type = ObjectType::Text( CatplushTextData { bitmap, text: text.to_string() } );
             self
         }
 
@@ -647,7 +644,7 @@ pub mod catplush_main {
                         RenderData::RectangleData(RectangleRenderData { color: element.color, stroke_color: element.stroke_color, corner_radius: element.corner_radius, border_width: element.border_width })
                     },
                     ObjectType::Text(data) => {
-                        RenderData::TextData(TextRenderData { color: element.color, font_size: data.font_size, line_height: data.line_height })
+                        RenderData::TextData(TextRenderData { bitmap: data.bitmap.clone(), text: data.text.clone() })
                     },
                     ObjectType::Image(data) => {
                         RenderData::ImageData(ImageRenderData { texture_id: data.texture_id, width: data.width, height: data.height })
@@ -684,10 +681,8 @@ pub mod catplush_main {
 
 
     pub(crate) struct TextRenderData {
-        pub(crate) color: ObjectColor,
-
-        pub(crate) font_size: f32,
-        pub(crate) line_height: f32
+        pub(crate) bitmap: BitmapConfiguration,
+        pub(crate) text: String
     }
 
     pub(crate) struct ImageRenderData {
@@ -714,16 +709,25 @@ pub mod catplush_main {
 
         pub id: &'static str,
     }
+
+    #[derive(Clone)]
+    pub struct BitmapConfiguration {
+        pub texture: NonZeroU32,
+        pub size: Vec2,
+        pub grid_size: Vec2,
+        pub character_list: String,
+        pub characters_per_row: u8
+    }
 }
 
 pub mod catplush_friend {
     use crate::catplush_main::*;
     use std::num::NonZeroU32;
-    use frienderer::{DrawCommand, Quad, RRect, RawImage, Renderer, TextLayout};
-    use parley::{Alignment, FontContext, FontStack, LayoutContext, LineHeight, StyleProperty};
+    use frienderer::{DrawCommand, Quad, RRect, RawImage, Renderer};
     use image::ImageFormat;
     use glow::{NativeTexture};
     use glam::{Vec2};
+
 
     pub fn friender_render_all(renderer: &mut Renderer, render_commands: Vec<RenderCommand>) {
         for render_command in render_commands {
@@ -752,22 +756,34 @@ pub mod catplush_friend {
                         NativeTexture(data.texture_id)
                     ));
                 },
-                RenderData::TextData(_) => todo!()
+                RenderData::TextData(data) => {
+                    render_text(renderer, data.text.as_str(), Vec2::new(render_command.bounding_box.x, render_command.bounding_box.y), data.bitmap);
+                }
             }
         }
 
         renderer.draw();
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn create_text(layout_context: &mut LayoutContext<()>, mut font_context: FontContext, text: &str, font_stack: &str, line_height: f32, font_size: f32, alignment: Alignment, color: ObjectColor, scale: f32) -> TextLayout {
-        let mut builder = layout_context.ranged_builder(&mut font_context, text, scale, true);
-        {
-            builder.push_default(FontStack::from(font_stack));
-            builder.push_default(StyleProperty::LineHeight(LineHeight::FontSizeRelative(line_height)));
-            builder.push_default(StyleProperty::FontSize(font_size));
+    pub(crate) fn render_text(renderer: &mut Renderer, text: &str, position: Vec2, bitmap: BitmapConfiguration) {
+        for (i, char) in text.chars().enumerate() {
+            let index_in_bitmap = bitmap.character_list.find(char).unwrap() as i32;
+            let uv_cell_size = bitmap.grid_size / bitmap.size;
+            let x = (index_in_bitmap % bitmap.characters_per_row as i32) as f32 * uv_cell_size.x;
+            let y = (index_in_bitmap / bitmap.characters_per_row as i32) as f32 * uv_cell_size.y;
+
+            renderer.push_draw_command(DrawCommand::TextureQuad(
+                Quad {
+                    pos: Vec2::new(position.x + (i as f32 * bitmap.grid_size.x), position.y),
+                    size: bitmap.grid_size,
+                    origin: Vec2::ZERO,
+                    uv_pos: Vec2::new(x, y),
+                    uv_size: Vec2::ONE,
+                    rotation: 0.0
+                },
+                NativeTexture(bitmap.texture)
+            ));
         }
-        TextLayout::new(builder.build(text), alignment, color.as_u32(), scale)
     }
 
     pub fn load_texture(renderer: Renderer, image_bytes: &[u8], format: ImageFormat) -> NativeTexture {

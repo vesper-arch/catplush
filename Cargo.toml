@@ -5,8 +5,7 @@ edition = "2021"
 
 [dependencies]
 log = "0.4.28"
-frienderer = { git = "https://git.speykious.dev/Speykious/frienderer.git", version = "0.1.0", rev = "f15f24113b" }
-parley = "0.7.0"
+frienderer = { git = "https://git.speykious.dev/Speykious/frienderer.git", version = "0.1.0", rev = "0f03b60", default-features = false }
 image = "0.25.9"
 glow = "0.16.0"
 glam = "0.30.9"

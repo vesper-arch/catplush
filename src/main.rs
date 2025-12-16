@@ -1,7 +1,7 @@
 use catplush::catplush_main::*;
 use catplush::catplush_friend::*;
 use frienderer::{RawImage, Renderer};
-use glam::{ivec2};
+use glam::{ivec2, Vec2};
 use glfw::{Action, Context, Key, OpenGlProfileHint, WindowHint};
 use image::ImageFormat;
 
@@ -28,6 +28,8 @@ const DARK_BORDER: ObjectColor = ObjectColor::from_u32_hex(0x213d4dff);
 
 const CARD_IMAGE: &[u8] = include_bytes!("../resources/CardIcon_Watcher_Skill_Rare.png");
 const AWAKENED_IMAGE: &[u8] = include_bytes!("../resources/Achv-Awakened.png");
+
+const UIUA_BITMAP: &[u8] = include_bytes!("../resources/font2bitmap.png");
 
 fn main() {
     let mut glfw = glfw::init(glfw::fail_on_errors).unwrap();
@@ -72,6 +74,15 @@ fn main() {
 		height: awakened_image.height(),
 		pixels: awakened_image.as_bytes()
 	});
+
+	let (uiua_bitmap_texture, uiua_bitmap_size_x, uiua_bitmap_size_y) = load_frienderer_texture(&mut renderer, UIUA_BITMAP, ImageFormat::Png);
+	let uiua_bitmap = BitmapConfiguration {
+	    texture: get_texture_id(&uiua_bitmap_texture),
+		size: Vec2::new(uiua_bitmap_size_x as f32, uiua_bitmap_size_y as f32),
+		grid_size: Vec2::new(16., 21.),
+		character_list: " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~".to_owned(),
+		characters_per_row: 19
+	};
 
     while !window.should_close() {
         glfw.poll_events();
@@ -130,7 +141,11 @@ fn main() {
                     .child_gap(10));
 
                     for _ in 1..5 {
-                        ui.open_element(sidebar_element());
+                        ui.open_element(sidebar_element()
+                            .alignment(ChildXAlignment::Left, ChildYAlignment::Center));
+                            ui.open_element(UiElement::new()
+                                .text(uiua_bitmap.clone(), "ABC"));
+                            ui.close_element();
                         ui.close_element();
                     }
 
