@@ -9,6 +9,7 @@ fn topbar_button(button_width: i32) -> UiElement {
     UiElement::new()
         .rectangle(ObjectColor(51, 136, 175, 255), CornerRadius::all(10.0))
         .sizing(SizingMode::Fixed(button_width), SizingMode::Grow)
+        .alignment(ChildXAlignment::Center, ChildYAlignment::Center)
 }
 
 fn spacer() -> UiElement {
@@ -29,7 +30,7 @@ const DARK_BORDER: ObjectColor = ObjectColor::from_u32_hex(0x213d4dff);
 const CARD_IMAGE: &[u8] = include_bytes!("../resources/CardIcon_Watcher_Skill_Rare.png");
 const AWAKENED_IMAGE: &[u8] = include_bytes!("../resources/Achv-Awakened.png");
 
-const UIUA_BITMAP: &[u8] = include_bytes!("../resources/font2bitmap.png");
+const UIUA_BITMAP: &[u8] = include_bytes!("../resources/Uiua386.png");
 
 fn main() {
     let mut glfw = glfw::init(glfw::fail_on_errors).unwrap();
@@ -62,24 +63,16 @@ fn main() {
 	renderer.set_clear_color(0.0, 0.0, 0.0, 0.5);
 
 	let cardicon_image = image::load_from_memory_with_format(CARD_IMAGE, ImageFormat::Png).unwrap();
-	let cardicon_texture = renderer.upload_texture(RawImage {
-	    width: cardicon_image.width(),
-		height: cardicon_image.height(),
-		pixels: cardicon_image.as_bytes()
-	});
+	let cardicon_texture = load_texture_from_image(&mut renderer, &cardicon_image);
 
 	let awakened_image = image::load_from_memory_with_format(AWAKENED_IMAGE, ImageFormat::Png).unwrap();
-	let awakened_texture = renderer.upload_texture(RawImage {
-	    width: awakened_image.width(),
-		height: awakened_image.height(),
-		pixels: awakened_image.as_bytes()
-	});
+	let awakened_texture = load_texture_from_image(&mut renderer, &awakened_image);
 
-	let (uiua_bitmap_texture, uiua_bitmap_size_x, uiua_bitmap_size_y) = load_frienderer_texture(&mut renderer, UIUA_BITMAP, ImageFormat::Png);
+	let (uiua_bitmap_texture, uiua_bitmap_width, uiua_bitmap_height) = load_frienderer_texture(&mut renderer, UIUA_BITMAP, ImageFormat::Png);
 	let uiua_bitmap = BitmapConfiguration {
 	    texture: get_texture_id(&uiua_bitmap_texture),
-		size: Vec2::new(uiua_bitmap_size_x as f32, uiua_bitmap_size_y as f32),
-		grid_size: Vec2::new(16., 21.),
+		texture_size: Vec2::new(uiua_bitmap_width as f32, uiua_bitmap_height as f32),
+		cell_size: Vec2::new(15., 24.),
 		character_list: " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~".to_owned(),
 		characters_per_row: 19
 	};
@@ -97,7 +90,6 @@ fn main() {
 
         let mut ui = CatplushContext::begin_layout(window.get_size(), ChildLayoutDirection::TopToBottom);
 
-
         ui.open_element(UiElement::new()
             .sizing(SizingMode::Grow, SizingMode::Grow)
             .layout_direction(ChildLayoutDirection::TopToBottom)
@@ -113,15 +105,26 @@ fn main() {
 
                 ui.open_element(topbar_button(100)
                     .border(MONOCHROME_HIGHLIGHT, BorderWidth::all(2)));
+
+                    ui.open_element(UiElement::new()
+                        .text(&uiua_bitmap, "File", 16));
+                    ui.close_element();
+
                 ui.close_element();
 
                 ui.open_element(topbar_button(75));
+                    ui.open_element(UiElement::new()
+                        .text(&uiua_bitmap, "Edit", 16));
+                    ui.close_element();
                 ui.close_element();
 
                 ui.open_element(spacer());
                 ui.close_element();
 
                 ui.open_element(topbar_button(75));
+                    ui.open_element(UiElement::new()
+                        .text(&uiua_bitmap, "Close", 16));
+                    ui.close_element();
                 ui.close_element();
 
             ui.close_element();
@@ -140,12 +143,15 @@ fn main() {
                     .padding(Padding::all(10))
                     .child_gap(10));
 
+                    ui.open_element(sidebar_element()
+                        .alignment(ChildXAlignment::Center, ChildYAlignment::Center));
+
+                        ui.open_element(UiElement::new()
+                            .text(&uiua_bitmap, "jklasjdl", 24));
+                        ui.close_element();
+                    ui.close_element();
                     for _ in 1..5 {
-                        ui.open_element(sidebar_element()
-                            .alignment(ChildXAlignment::Left, ChildYAlignment::Center));
-                            ui.open_element(UiElement::new()
-                                .text(uiua_bitmap.clone(), "ABC"));
-                            ui.close_element();
+                        ui.open_element(sidebar_element());
                         ui.close_element();
                     }
 

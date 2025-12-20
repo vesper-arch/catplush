@@ -248,7 +248,8 @@ pub mod catplush_main {
 
     pub struct CatplushTextData {
         pub(crate) bitmap: BitmapConfiguration,
-        pub(crate) text: String
+        pub(crate) lines: Vec<String>,
+        pub(crate) font_size: u32
     }
 
     #[derive(Default)]
@@ -301,8 +302,15 @@ pub mod catplush_main {
             self
         }
 
-        pub fn text(mut self, bitmap: BitmapConfiguration, text: &str) -> Self {
-            self.object_type = ObjectType::Text( CatplushTextData { bitmap, text: text.to_string() } );
+        pub fn text(mut self, bitmap: &BitmapConfiguration, text: &str, font_size: u32) -> Self {
+            let font_size_factor = font_size as f32 / bitmap.cell_size.y;
+
+            self.layout.sizing = Sizing {
+                width: SizingMode::Fixed((bitmap.cell_size.x * font_size_factor) as i32 * text.len() as i32),
+                height: SizingMode::Fixed((bitmap.cell_size.y * font_size_factor) as i32)
+            };
+            self.object_type = ObjectType::Text( CatplushTextData { bitmap: bitmap.clone(), lines: vec![text.to_string()], font_size } );
+
             self
         }
 
@@ -377,6 +385,14 @@ pub mod catplush_main {
             closing_node.element.final_size_x += (closing_node.element.layout.padding.left + closing_node.element.layout.padding.right) as f32;
             closing_node.element.final_size_y += (closing_node.element.layout.padding.top + closing_node.element.layout.padding.bottom) as f32;
 
+            let child_gap = (closing_node.child_elements.len() as i32 - 1) * closing_node.element.layout.child_gap;
+
+            if closing_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+                closing_node.element.final_size_x += child_gap as f32;
+            } else {
+                closing_node.element.final_size_y += child_gap as f32;
+            }
+
             // Fixed Sizing
             match closing_node.element.layout.sizing.width {
                 SizingMode::Fixed(size) => {closing_node.element.final_size_x = size as f32},
@@ -389,12 +405,10 @@ pub mod catplush_main {
                 SizingMode::Grow => {},
             }
 
-            let child_gap = (parent_node.child_elements.len() as i32 - 1) * parent_node.element.layout.child_gap;
 
             // Fit Sizing
             if parent_node.element.layout.sizing.width == SizingMode::Fit || parent_node.element.layout.sizing.width == SizingMode::Grow {
                 if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
-                    parent_node.element.final_size_x += child_gap as f32/2.0;
                     parent_node.element.final_size_x += closing_node.element.final_size_x;
                 } else {
                     parent_node.element.final_size_x = f32::max(closing_node.element.final_size_x, parent_node.element.final_size_x)
@@ -405,7 +419,6 @@ pub mod catplush_main {
                 if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
                     parent_node.element.final_size_y = f32::max(closing_node.element.final_size_y, parent_node.element.final_size_y);
                 } else {
-                    parent_node.element.final_size_y += child_gap as f32/2.0;
                     parent_node.element.final_size_y += closing_node.element.final_size_y;
                 }
             }
@@ -644,7 +657,7 @@ pub mod catplush_main {
                         RenderData::RectangleData(RectangleRenderData { color: element.color, stroke_color: element.stroke_color, corner_radius: element.corner_radius, border_width: element.border_width })
                     },
                     ObjectType::Text(data) => {
-                        RenderData::TextData(TextRenderData { bitmap: data.bitmap.clone(), text: data.text.clone() })
+                        RenderData::TextData(TextRenderData { bitmap: data.bitmap.clone(), lines: data.lines.clone(), font_size: data.font_size })
                     },
                     ObjectType::Image(data) => {
                         RenderData::ImageData(ImageRenderData { texture_id: data.texture_id, width: data.width, height: data.height })
@@ -682,7 +695,8 @@ pub mod catplush_main {
 
     pub(crate) struct TextRenderData {
         pub(crate) bitmap: BitmapConfiguration,
-        pub(crate) text: String
+        pub(crate) lines: Vec<String>,
+        pub(crate) font_size: u32
     }
 
     pub(crate) struct ImageRenderData {
@@ -713,8 +727,8 @@ pub mod catplush_main {
     #[derive(Clone)]
     pub struct BitmapConfiguration {
         pub texture: NonZeroU32,
-        pub size: Vec2,
-        pub grid_size: Vec2,
+        pub texture_size: Vec2,
+        pub cell_size: Vec2,
         pub character_list: String,
         pub characters_per_row: u8
     }
@@ -724,7 +738,7 @@ pub mod catplush_friend {
     use crate::catplush_main::*;
     use std::num::NonZeroU32;
     use frienderer::{DrawCommand, Quad, RRect, RawImage, Renderer};
-    use image::ImageFormat;
+    use image::{DynamicImage, ImageFormat};
     use glow::{NativeTexture};
     use glam::{Vec2};
 
@@ -757,7 +771,7 @@ pub mod catplush_friend {
                     ));
                 },
                 RenderData::TextData(data) => {
-                    render_text(renderer, data.text.as_str(), Vec2::new(render_command.bounding_box.x, render_command.bounding_box.y), data.bitmap);
+                    render_text(renderer, &data.lines, Vec2::new(render_command.bounding_box.x, render_command.bounding_box.y), data.bitmap, data.font_size);
                 }
             }
         }
@@ -765,33 +779,35 @@ pub mod catplush_friend {
         renderer.draw();
     }
 
-    pub(crate) fn render_text(renderer: &mut Renderer, text: &str, position: Vec2, bitmap: BitmapConfiguration) {
-        for (i, char) in text.chars().enumerate() {
-            let index_in_bitmap = bitmap.character_list.find(char).unwrap() as i32;
-            let uv_cell_size = bitmap.grid_size / bitmap.size;
-            let x = (index_in_bitmap % bitmap.characters_per_row as i32) as f32 * uv_cell_size.x;
-            let y = (index_in_bitmap / bitmap.characters_per_row as i32) as f32 * uv_cell_size.y;
+    pub(crate) fn render_text(renderer: &mut Renderer, lines: &[String], position: Vec2, bitmap: BitmapConfiguration, font_size: u32) {
+        for line in lines {
+            for (i, char) in line.chars().enumerate() {
+                let scale_factor = font_size as f32 / bitmap.cell_size.y;
+                let index_in_bitmap = bitmap.character_list.find(char).unwrap() as i32;
+                let uv_cell_size = bitmap.cell_size / bitmap.texture_size;
+                let x = (index_in_bitmap % bitmap.characters_per_row as i32) as f32 * uv_cell_size.x;
+                let y = (index_in_bitmap / bitmap.characters_per_row as i32) as f32 * uv_cell_size.y;
 
-            renderer.push_draw_command(DrawCommand::TextureQuad(
-                Quad {
-                    pos: Vec2::new(position.x + (i as f32 * bitmap.grid_size.x), position.y),
-                    size: bitmap.grid_size,
-                    origin: Vec2::ZERO,
-                    uv_pos: Vec2::new(x, y),
-                    uv_size: Vec2::ONE,
-                    rotation: 0.0
-                },
-                NativeTexture(bitmap.texture)
-            ));
+                renderer.push_draw_command(DrawCommand::TextureQuad(
+                    Quad {
+                        pos: Vec2::new(position.x + ((i as f32 * bitmap.cell_size.x) * scale_factor), position.y),
+                        size: bitmap.cell_size * scale_factor,
+                        origin: Vec2::ZERO,
+                        uv_pos: Vec2::new(x, y),
+                        uv_size: uv_cell_size,
+                        rotation: 0.0
+                    },
+                    NativeTexture(bitmap.texture)
+                ));
+            }
         }
     }
 
-    pub fn load_texture(renderer: Renderer, image_bytes: &[u8], format: ImageFormat) -> NativeTexture {
-        let opengl_image = image::load_from_memory_with_format(image_bytes, format).unwrap();
+    pub fn load_texture_from_image(renderer: &mut Renderer, image: &DynamicImage) -> NativeTexture {
         renderer.upload_texture(RawImage {
-            width: opengl_image.width(),
-            height: opengl_image.height(),
-            pixels: opengl_image.as_bytes()
+            width: image.width(),
+            height: image.height(),
+            pixels: image.as_bytes()
         })
     }
 
@@ -803,6 +819,6 @@ pub mod catplush_friend {
             width: image.width(),
             height: image.height(),
             pixels: image.as_bytes()
-        }), image.height(), image.width())
+        }), image.width(), image.height())
     }
 }
