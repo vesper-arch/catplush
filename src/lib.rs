@@ -304,9 +304,32 @@ pub mod catplush_main {
             self
         }
 
-        pub fn image(mut self, texture: CatplushTextureData, width: Option<i32>, height: Option<i32>) -> Self {
-            let actual_width = width.unwrap_or(texture.width);
-            let actual_height = height.unwrap_or(texture.height);
+        pub fn image(mut self, texture: CatplushTextureData, width: Option<i32>, height: Option<i32>, ignore_aspect_ratio: bool) -> Self {
+            let width_to_height_ratio = texture.width as f32 / texture.height as f32;
+            let height_to_width_ratio = texture.height as f32 / texture.width as f32;
+
+            let actual_height: i32;
+            let actual_width: i32;
+
+            if ignore_aspect_ratio {
+                actual_width = width.unwrap_or(texture.width);
+                actual_height = height.unwrap_or(texture.height);
+            } else {
+                match (width, height) {
+                    (Some(amount), Some(_)) | (Some(amount), None) => {
+                        actual_width = amount;
+                        actual_height = (actual_width as f32 * width_to_height_ratio) as i32;
+                    },
+                    (None, Some(amount)) => {
+                        actual_height = amount;
+                        actual_width = (actual_height as f32 * height_to_width_ratio) as i32;
+                    },
+                    (None, None) => {
+                        actual_width = texture.width;
+                        actual_height = texture.height;
+                    }
+                }
+            }
 
             self.object_type = ObjectType::Image(CatplushTextureData {
                 texture_id: texture.texture_id,

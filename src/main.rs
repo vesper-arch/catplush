@@ -165,11 +165,11 @@ fn main() {
                     .child_gap(10));
 
                     ui.open_element(UiElement::new()
-                        .image(cardicon_image, Some(100), None));
+                        .image(cardicon_image, None, Some(50), false));
                     ui.close_element();
 
                     ui.open_element(UiElement::new()
-                        .image(awakened_image, None, None));
+                        .image(awakened_image, Some(100), None, true));
                     ui.close_element();
 
                 ui.close_element();
