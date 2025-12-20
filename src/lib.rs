@@ -113,15 +113,21 @@ pub mod catplush_main {
         }
     }
 
-    pub struct SizeConstraint {
+    pub struct SizeLimit {
         min: i32,
         max: i32
     }
 
-    impl Default for SizeConstraint {
+    impl Default for SizeLimit {
         fn default() -> Self {
             Self {min: 0, max: 999999999}
         }
+    }
+
+    #[derive(Default)]
+    pub struct SizingLimits {
+        width: SizeLimit,
+        height: SizeLimit
     }
 
     #[derive(Default, Copy, Clone)]
@@ -218,19 +224,21 @@ pub mod catplush_main {
     }
 
     pub struct LayoutConfig {
-        pub sizing: Sizing,
-        pub size_constraints: (SizeConstraint, SizeConstraint),
-        pub padding: Padding,
-        pub child_gap: i32,
-        pub layout_direction: ChildLayoutDirection,
-        pub child_alignment: ChildAlignment
+        pub(crate) sizing: Sizing,
+        pub(crate) size_constraints: SizingLimits,
+        pub(crate) keep_aspect_ratio: bool,
+        pub(crate) padding: Padding,
+        pub(crate) child_gap: i32,
+        pub(crate) layout_direction: ChildLayoutDirection,
+        pub(crate) child_alignment: ChildAlignment
     }
 
     impl Default for LayoutConfig {
         fn default() -> Self {
             LayoutConfig {
                 sizing: Sizing::both(SizingMode::Fit),
-                size_constraints: (SizeConstraint::default(), SizeConstraint::default()),
+                size_constraints: SizingLimits::default(),
+                keep_aspect_ratio: true,
                 padding: Padding::all(0),
                 child_gap: 0,
                 layout_direction: ChildLayoutDirection::LeftToRight,
@@ -240,10 +248,10 @@ pub mod catplush_main {
     }
 
     #[derive(Copy, Clone)]
-    pub struct CatplushImageData {
-        pub(crate) texture_id: NonZeroU32,
-        pub(crate) width: i32,
-        pub(crate) height: i32,
+    pub struct CatplushTextureData {
+        pub texture_id: NonZeroU32,
+        pub width: i32,
+        pub height: i32,
     }
 
     pub struct CatplushTextData {
@@ -258,7 +266,7 @@ pub mod catplush_main {
         Unset,
         Rectangle,
         Text ( CatplushTextData ),
-        Image ( CatplushImageData )
+        Image ( CatplushTextureData )
     }
 
     #[derive(Default)]
@@ -296,9 +304,17 @@ pub mod catplush_main {
             self
         }
 
-        pub fn image(mut self, texture_id: NonZeroU32, width: i32, height: i32) -> Self {
-            self.object_type = ObjectType::Image(CatplushImageData { texture_id, width, height });
-            self.layout.sizing = Sizing { width: SizingMode::Fixed(width), height: SizingMode::Fixed(height) };
+        pub fn image(mut self, texture: CatplushTextureData, width: Option<i32>, height: Option<i32>) -> Self {
+            let actual_width = width.unwrap_or(texture.width);
+            let actual_height = height.unwrap_or(texture.height);
+
+            self.object_type = ObjectType::Image(CatplushTextureData {
+                texture_id: texture.texture_id,
+                width: actual_width,
+                height: actual_height
+            });
+
+            self.layout.sizing = Sizing { width: SizingMode::Fixed(actual_width), height: SizingMode::Fixed(actual_height) };
             self
         }
 
@@ -329,9 +345,18 @@ pub mod catplush_main {
             self
         }
 
-        // weird function name
-        pub fn constrain(mut self, width: SizeConstraint, height: SizeConstraint) -> Self {
-            self.layout.size_constraints = (width, height);
+        pub fn keep_aspect_ratio(mut self) -> Self {
+            self.layout.keep_aspect_ratio = true;
+            self
+        }
+
+        pub fn limit_width(mut self, width_limits: SizeLimit) -> Self {
+            self.layout.size_constraints.width = width_limits;
+            self
+        }
+
+        pub fn limit_height(mut self, height_limits: SizeLimit) -> Self {
+            self.layout.size_constraints.height = height_limits;
             self
         }
 
@@ -345,10 +370,11 @@ pub mod catplush_main {
             self
         }
 
-        pub fn id(mut self, id: &'static str) -> Self {
-            self.id = Some(id);
-            self
-        }
+        // Commenting this out until I figure out how to do IDs
+        // pub fn id(mut self, id: &'static str) -> Self {
+        //     self.id = Some(id);
+        //     self
+        // }
     }
 
     impl CatplushContext {
@@ -660,7 +686,7 @@ pub mod catplush_main {
                         RenderData::TextData(TextRenderData { bitmap: data.bitmap.clone(), lines: data.lines.clone(), font_size: data.font_size })
                     },
                     ObjectType::Image(data) => {
-                        RenderData::ImageData(ImageRenderData { texture_id: data.texture_id, width: data.width, height: data.height })
+                        RenderData::ImageData(TextureRenderData { texture_id: data.texture_id, width: data.width, height: data.height })
                     }
                 };
 
@@ -699,7 +725,7 @@ pub mod catplush_main {
         pub(crate) font_size: u32
     }
 
-    pub(crate) struct ImageRenderData {
+    pub(crate) struct TextureRenderData {
         pub(crate) texture_id: NonZeroU32,
         pub(crate) width: i32,
         pub(crate) height: i32,
@@ -713,7 +739,7 @@ pub mod catplush_main {
         NoType,
         RectangleData(RectangleRenderData),
         TextData(TextRenderData),
-        ImageData(ImageRenderData)
+        ImageData(TextureRenderData)
     }
 
     pub struct RenderCommand {
@@ -813,12 +839,18 @@ pub mod catplush_friend {
 
     pub fn get_texture_id(texture: &NativeTexture) -> NonZeroU32 { texture.0 }
 
-    pub fn load_frienderer_texture(renderer: &mut Renderer, image_data: &[u8], format: ImageFormat) -> (NativeTexture, u32, u32) {
+    pub fn load_frienderer_texture(renderer: &mut Renderer, image_data: &[u8], format: ImageFormat) -> CatplushTextureData {
         let image = image::load_from_memory_with_format(image_data, format).unwrap();
-        (renderer.upload_texture(RawImage {
+        let texture = renderer.upload_texture(RawImage {
             width: image.width(),
             height: image.height(),
             pixels: image.as_bytes()
-        }), image.width(), image.height())
+        }).0;
+
+        CatplushTextureData {
+            texture_id: texture,
+            width: image.width() as i32,
+            height: image.height() as i32
+        }
     }
 }

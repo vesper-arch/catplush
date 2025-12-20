@@ -1,6 +1,6 @@
 use catplush::catplush_main::*;
 use catplush::catplush_friend::*;
-use frienderer::{RawImage, Renderer};
+use frienderer::{Renderer};
 use glam::{ivec2, Vec2};
 use glfw::{Action, Context, Key, OpenGlProfileHint, WindowHint};
 use image::ImageFormat;
@@ -62,16 +62,14 @@ fn main() {
 	let mut renderer = Renderer::new(viewport, gl);
 	renderer.set_clear_color(0.0, 0.0, 0.0, 0.5);
 
-	let cardicon_image = image::load_from_memory_with_format(CARD_IMAGE, ImageFormat::Png).unwrap();
-	let cardicon_texture = load_texture_from_image(&mut renderer, &cardicon_image);
+	let cardicon_image = load_frienderer_texture(&mut renderer, CARD_IMAGE, ImageFormat::Png);
 
-	let awakened_image = image::load_from_memory_with_format(AWAKENED_IMAGE, ImageFormat::Png).unwrap();
-	let awakened_texture = load_texture_from_image(&mut renderer, &awakened_image);
+	let awakened_image = load_frienderer_texture(&mut renderer, AWAKENED_IMAGE, ImageFormat::Png);
 
-	let (uiua_bitmap_texture, uiua_bitmap_width, uiua_bitmap_height) = load_frienderer_texture(&mut renderer, UIUA_BITMAP, ImageFormat::Png);
+	let uiua_bitmap_texture = load_frienderer_texture(&mut renderer, UIUA_BITMAP, ImageFormat::Png);
 	let uiua_bitmap = BitmapConfiguration {
-	    texture: get_texture_id(&uiua_bitmap_texture),
-		texture_size: Vec2::new(uiua_bitmap_width as f32, uiua_bitmap_height as f32),
+	    texture: uiua_bitmap_texture.texture_id,
+		texture_size: Vec2::new(uiua_bitmap_texture.width as f32, uiua_bitmap_texture.height as f32),
 		cell_size: Vec2::new(15., 24.),
 		character_list: " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~".to_owned(),
 		characters_per_row: 19
@@ -139,7 +137,7 @@ fn main() {
                     .rectangle(ObjectColor(17, 36, 46, 255), CornerRadius::all(15.0))
                     .sizing(SizingMode::Fixed(200), SizingMode::Grow)
                     .layout_direction(ChildLayoutDirection::TopToBottom)
-                    .alignment(ChildXAlignment::Left, ChildYAlignment::Center)
+                    .alignment(ChildXAlignment::Center, ChildYAlignment::Top)
                     .padding(Padding::all(10))
                     .child_gap(10));
 
@@ -147,7 +145,7 @@ fn main() {
                         .alignment(ChildXAlignment::Center, ChildYAlignment::Center));
 
                         ui.open_element(UiElement::new()
-                            .text(&uiua_bitmap, "jklasjdl", 24));
+                            .text(&uiua_bitmap, "Images Idk", 22));
                         ui.close_element();
                     ui.close_element();
                     for _ in 1..5 {
@@ -167,11 +165,11 @@ fn main() {
                     .child_gap(10));
 
                     ui.open_element(UiElement::new()
-                        .image(get_texture_id(&cardicon_texture), cardicon_image.width() as i32, cardicon_image.height() as i32));
+                        .image(cardicon_image, Some(100), None));
                     ui.close_element();
 
                     ui.open_element(UiElement::new()
-                        .image(get_texture_id(&awakened_texture), awakened_image.width() as i32, awakened_image.height() as i32));
+                        .image(awakened_image, None, None));
                     ui.close_element();
 
                 ui.close_element();
