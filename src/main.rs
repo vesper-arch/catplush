@@ -5,6 +5,15 @@ use glam::{ivec2, Vec2};
 use glfw::{Action, Context, Key, OpenGlProfileHint, WindowHint};
 use image::ImageFormat;
 
+struct CardColor;
+
+impl CardColor {
+    pub const RED: ObjectColor = ObjectColor::from_u32_hex(0x91352eff);
+    pub const GREEN: ObjectColor = ObjectColor::from_u32_hex(0x066a2dff);
+    pub const BLUE: ObjectColor = ObjectColor::from_u32_hex(0x31549dff);
+    pub const PURPLE: ObjectColor = ObjectColor::from_u32_hex(0x69418eff);
+}
+
 fn topbar_button(button_width: i32) -> UiElement {
     UiElement::new()
         .rectangle(ObjectColor(51, 136, 175, 255), CornerRadius::all(10.0))
@@ -21,13 +30,39 @@ fn sidebar_element() -> UiElement {
     UiElement::new()
         .rectangle(ObjectColor(51, 136, 175, 255), CornerRadius::all(10.0))
         .sizing(SizingMode::Grow, SizingMode::Fixed(50))
+        .padding(Padding::all(20))
+}
+
+fn card_cell(ui: &mut CatplushContext, bitmap: &BitmapConfiguration, card_name: &str, card_icon: CatplushTextureData, card_color: ObjectColor) {
+    ui.open_element(UiElement::new()
+        .rectangle(card_color, CornerRadius::all(10.0))
+        .sizing(SizingMode::Grow, SizingMode::Fixed(40))
+        .padding(Padding::hv(15, 5))
+        .alignment(ChildXAlignment::Left, ChildYAlignment::Center)
+        .child_gap(10));
+
+        ui.open_element(UiElement::new()
+            .image(card_icon, None, None, false));
+        ui.close_element();
+
+        ui.open_element(spacer());
+        ui.close_element();
+
+        ui.open_element(UiElement::new()
+            .text(bitmap, card_name, 18));
+        ui.close_element();
+
+    ui.close_element();
 }
 
 const CONTRAST_HIGHLIGHT: ObjectColor = ObjectColor::from_u32_hex(0xeebe2bff);
 const MONOCHROME_HIGHLIGHT: ObjectColor = ObjectColor::from_u32_hex(0x7dd1eeff);
 const DARK_BORDER: ObjectColor = ObjectColor::from_u32_hex(0x213d4dff);
 
-const CARD_IMAGE: &[u8] = include_bytes!("../resources/CardIcon_Watcher_Skill_Rare.png");
+const WATCHER_RARE_SKILL_IMAGE: &[u8] = include_bytes!("../resources/CardIcon_Watcher_Skill_Rare.png");
+const IRONCLAD_UNCOMMON_POWER_IMAGE: &[u8] = include_bytes!("../resources/CardIcon_Ironclad_Power_Uncommon.png");
+const DEFECT_RARE_ATTACK_IMAGE: &[u8] = include_bytes!("../resources/CardIcon_Defect_Attack_Rare.png");
+const SILENT_COMMON_ATTACK_IMAGE: &[u8] = include_bytes!("../resources/CardIcon_Silent_Attack_Common.png");
 const AWAKENED_IMAGE: &[u8] = include_bytes!("../resources/Achv-Awakened.png");
 
 const UIUA_BITMAP: &[u8] = include_bytes!("../resources/Uiua386.png");
@@ -40,7 +75,7 @@ fn main() {
 	glfw.window_hint(WindowHint::TransparentFramebuffer(true));
 
 	let (mut window, events) = glfw
-		.create_window(800, 380, "LETS FUCKING GOOOOOOOOO", glfw::WindowMode::Windowed)
+		.create_window(1400, 700, "help", glfw::WindowMode::Windowed)
 		.expect("Failed to create GLFW window.");
 
 	window.set_key_polling(true);
@@ -62,7 +97,10 @@ fn main() {
 	let mut renderer = Renderer::new(viewport, gl);
 	renderer.set_clear_color(0.0, 0.0, 0.0, 0.5);
 
-	let cardicon_image = load_frienderer_texture(&mut renderer, CARD_IMAGE, ImageFormat::Png);
+	let watcher_rare_skill_image = load_frienderer_texture(&mut renderer, WATCHER_RARE_SKILL_IMAGE, ImageFormat::Png);
+	let ironclad_uncommon_power_image = load_frienderer_texture(&mut renderer, IRONCLAD_UNCOMMON_POWER_IMAGE, ImageFormat::Png);
+	let defect_rare_attack_image = load_frienderer_texture(&mut renderer, DEFECT_RARE_ATTACK_IMAGE, ImageFormat::Png);
+	let silent_common_attack_image = load_frienderer_texture(&mut renderer, SILENT_COMMON_ATTACK_IMAGE, ImageFormat::Png);
 
 	let awakened_image = load_frienderer_texture(&mut renderer, AWAKENED_IMAGE, ImageFormat::Png);
 
@@ -145,7 +183,14 @@ fn main() {
                         .alignment(ChildXAlignment::Center, ChildYAlignment::Center));
 
                         ui.open_element(UiElement::new()
-                            .text(&uiua_bitmap, "Images Idk", 22));
+                            .image(awakened_image, Some(30), None, false));
+                        ui.close_element();
+
+                        ui.open_element(spacer());
+                        ui.close_element();
+
+                        ui.open_element(UiElement::new()
+                            .text(&uiua_bitmap, "Cards", 22));
                         ui.close_element();
                     ui.close_element();
                     for _ in 1..5 {
@@ -156,20 +201,40 @@ fn main() {
                 ui.close_element();
 
                 ui.open_element(UiElement::new()
-                    .rectangle(ObjectColor(17, 36, 46, 255), CornerRadius::all(15.0))
+                    .rectangle(ObjectColor(17, 36, 46, 255), CornerRadius::all(17.0))
                     .border(CONTRAST_HIGHLIGHT, BorderWidth::all(3))
                     .sizing(SizingMode::Grow, SizingMode::Grow)
                     .alignment(ChildXAlignment::Center, ChildYAlignment::Top)
-                    .layout_direction(ChildLayoutDirection::LeftToRight)
+                    .layout_direction(ChildLayoutDirection::TopToBottom)
                     .padding(Padding::all(10))
                     .child_gap(10));
 
                     ui.open_element(UiElement::new()
-                        .image(cardicon_image, None, Some(50), false));
+                        .sizing(SizingMode::Grow, SizingMode::Fit)
+                        .child_gap(10));
+
+                        card_cell(&mut ui, &uiua_bitmap, "Alpha", watcher_rare_skill_image, CardColor::PURPLE);
+                        card_cell(&mut ui, &uiua_bitmap, "Blasphemy", watcher_rare_skill_image, CardColor::PURPLE);
+                        card_cell(&mut ui, &uiua_bitmap, "Conjure Blade", watcher_rare_skill_image, CardColor::PURPLE);
+
+                        card_cell(&mut ui, &uiua_bitmap, "Combust", ironclad_uncommon_power_image, CardColor::RED);
+                        card_cell(&mut ui, &uiua_bitmap, "Evolve", ironclad_uncommon_power_image, CardColor::RED);
+                        card_cell(&mut ui, &uiua_bitmap, "Feel No Pain", ironclad_uncommon_power_image, CardColor::RED);
+
                     ui.close_element();
 
                     ui.open_element(UiElement::new()
-                        .image(awakened_image, Some(100), None, true));
+                        .sizing(SizingMode::Grow, SizingMode::Fit)
+                        .child_gap(10));
+
+                        card_cell(&mut ui, &uiua_bitmap, "Bane", silent_common_attack_image, CardColor::GREEN);
+                        card_cell(&mut ui, &uiua_bitmap, "Dagger Spray", silent_common_attack_image, CardColor::GREEN);
+                        card_cell(&mut ui, &uiua_bitmap, "Poisoned Stab", silent_common_attack_image, CardColor::GREEN);
+
+                        card_cell(&mut ui, &uiua_bitmap, "Thunder Strike", defect_rare_attack_image, CardColor::BLUE);
+                        card_cell(&mut ui, &uiua_bitmap, "Hyperbeam", defect_rare_attack_image, CardColor::BLUE);
+                        card_cell(&mut ui, &uiua_bitmap, "All for One", defect_rare_attack_image, CardColor::BLUE);
+
                     ui.close_element();
 
                 ui.close_element();

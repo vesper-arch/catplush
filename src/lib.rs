@@ -528,9 +528,15 @@ pub mod catplush_main {
                     for child_index in &growable_elements {
                         let child_size = if left_to_right { self.layout_elements[*child_index].element.final_size_x } else { self.layout_elements[*child_index].element.final_size_y };
                         match child_size.total_cmp(&smallest_size) {
-                            Ordering::Less => { second_smallest_size = smallest_size; smallest_size = child_size; },
+                            Ordering::Less => {
+                                second_smallest_size = smallest_size;
+                                smallest_size = child_size;
+                            },
                             Ordering::Equal => { continue; },
-                            Ordering::Greater => { second_smallest_size = f32::min(second_smallest_size, child_size); width_to_add = second_smallest_size - smallest_size; }
+                            Ordering::Greater => {
+                                second_smallest_size = f32::min(second_smallest_size, child_size);
+                                width_to_add = second_smallest_size - smallest_size;
+                            }
                         }
                     }
 
@@ -542,8 +548,10 @@ pub mod catplush_main {
                             else { &mut self.layout_elements[*child_index].element.final_size_y };
                         let initial_size = *child_size;
 
-                        *child_size += width_to_add;
-                        size_to_distribute -= *child_size - initial_size
+                        if *child_size == smallest_size {
+                            *child_size += width_to_add;
+                            size_to_distribute -= *child_size - initial_size
+                        }
                     }
                 }
             } else {
