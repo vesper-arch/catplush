@@ -551,7 +551,7 @@ pub mod catplush_main {
                         // For some reason this check makes ONLY the smallest element grow (sort of) bleghhhh
                         // if *child_size == smallest_size {
                             *child_size += width_to_add;
-                            size_to_distribute -= *child_size - initial_size
+                            size_to_distribute -= *child_size - initial_size;
                         // }
                     }
                 }
