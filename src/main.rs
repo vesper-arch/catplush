@@ -39,7 +39,7 @@ fn card_cell(ui: &mut CatplushContext, bitmap: &BitmapConfiguration, card_name: 
         .sizing(SizingMode::Grow, SizingMode::Fixed(40))
         .padding(Padding::hv(15, 5))
         .alignment(ChildXAlignment::Left, ChildYAlignment::Center)
-        .child_gap(10));
+        .child_gap(5));
 
         ui.open_element(UiElement::new()
             .image(card_icon, None, None, false));
@@ -75,7 +75,7 @@ fn main() {
 	glfw.window_hint(WindowHint::TransparentFramebuffer(true));
 
 	let (mut window, events) = glfw
-		.create_window(1400, 700, "help", glfw::WindowMode::Windowed)
+		.create_window(1200, 700, "LETS FUCKING GOOOOOOOO", glfw::WindowMode::Windowed)
 		.expect("Failed to create GLFW window.");
 
 	window.set_key_polling(true);
@@ -192,6 +192,7 @@ fn main() {
                         ui.open_element(UiElement::new()
                             .text(&uiua_bitmap, "Cards", 22));
                         ui.close_element();
+
                     ui.close_element();
                     for _ in 1..5 {
                         ui.open_element(sidebar_element());
@@ -210,7 +211,7 @@ fn main() {
                     .child_gap(10));
 
                     ui.open_element(UiElement::new()
-                        .sizing(SizingMode::Grow, SizingMode::Grow)
+                        .sizing(SizingMode::Grow, SizingMode::Fit)
                         .alignment(ChildXAlignment::Right, ChildYAlignment::Center)
                         .child_gap(10));
 
@@ -225,8 +226,9 @@ fn main() {
                     ui.close_element();
 
                     ui.open_element(UiElement::new()
-                        .sizing(SizingMode::Grow, SizingMode::Grow)
+                        .sizing(SizingMode::Grow, SizingMode::Fit)
                         .alignment(ChildXAlignment::Right, ChildYAlignment::Center)
+                        .grow_elements_unevenly()
                         .child_gap(10));
 
                         card_cell(&mut ui, &uiua_bitmap, "Bane", silent_common_attack_image, CardColor::GREEN);

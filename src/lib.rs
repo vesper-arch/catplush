@@ -226,11 +226,15 @@ pub mod catplush_main {
     pub struct LayoutConfig {
         pub(crate) sizing: Sizing,
         pub(crate) size_constraints: SizingLimits,
-        pub(crate) keep_aspect_ratio: bool,
         pub(crate) padding: Padding,
         pub(crate) child_gap: i32,
         pub(crate) layout_direction: ChildLayoutDirection,
-        pub(crate) child_alignment: ChildAlignment
+        pub(crate) child_alignment: ChildAlignment,
+
+        pub(crate) keep_aspect_ratio: bool,
+        /// If this is true, the growing algorithm will not try to make all child elements the same size
+        /// and elements with different initial sizes will still be different sizes.
+        pub(crate) grow_elements_unevenly: bool
     }
 
     impl Default for LayoutConfig {
@@ -238,11 +242,13 @@ pub mod catplush_main {
             LayoutConfig {
                 sizing: Sizing::both(SizingMode::Fit),
                 size_constraints: SizingLimits::default(),
-                keep_aspect_ratio: true,
                 padding: Padding::all(0),
                 child_gap: 0,
                 layout_direction: ChildLayoutDirection::LeftToRight,
-                child_alignment: ChildAlignment::default()
+                child_alignment: ChildAlignment::default(),
+
+                keep_aspect_ratio: true,
+                grow_elements_unevenly: false
             }
         }
     }
@@ -348,6 +354,9 @@ pub mod catplush_main {
                 width: SizingMode::Fixed((bitmap.cell_size.x * font_size_factor) as i32 * text.len() as i32),
                 height: SizingMode::Fixed((bitmap.cell_size.y * font_size_factor) as i32)
             };
+            
+            let lines: Vec<String> = vec![];
+            
             self.object_type = ObjectType::Text( CatplushTextData { bitmap: bitmap.clone(), lines: vec![text.to_string()], font_size } );
 
             self
@@ -370,6 +379,11 @@ pub mod catplush_main {
 
         pub fn keep_aspect_ratio(mut self) -> Self {
             self.layout.keep_aspect_ratio = true;
+            self
+        }
+
+        pub fn grow_elements_unevenly(mut self) -> Self {
+            self.layout.grow_elements_unevenly = true;
             self
         }
 
@@ -513,46 +527,50 @@ pub mod catplush_main {
             if sizing_along_axis {
                 let mut size_to_distribute = parent_size - padding as f32 - child_gap as f32 - inner_content_size;
 
-                growable_elements.retain(
-                    |&x|
-                    (left_to_right && self.layout_elements[x].element.layout.sizing.width == SizingMode::Grow)
-                    ||
-                    (!left_to_right && self.layout_elements[x].element.layout.sizing.height == SizingMode::Grow)
-                );
 
-                if size_to_distribute > 0.0 {
-                    let mut smallest_size = f32::MAX;
-                    let mut second_smallest_size = f32::MAX;
-                    let mut width_to_add = size_to_distribute;
+                if size_to_distribute > 0.0 && !growable_elements.is_empty() {
+                    growable_elements.retain(
+                        |&x|
+                        (left_to_right && self.layout_elements[x].element.layout.sizing.width == SizingMode::Grow)
+                        ||
+                        (!left_to_right && self.layout_elements[x].element.layout.sizing.height == SizingMode::Grow)
+                    );
 
-                    for child_index in &growable_elements {
-                        let child_size = if left_to_right { self.layout_elements[*child_index].element.final_size_x } else { self.layout_elements[*child_index].element.final_size_y };
-                        match child_size.total_cmp(&smallest_size) {
-                            Ordering::Less => {
-                                second_smallest_size = smallest_size;
-                                smallest_size = child_size;
-                            },
-                            Ordering::Equal => { continue; },
-                            Ordering::Greater => {
-                                second_smallest_size = f32::min(second_smallest_size, child_size);
-                                width_to_add = second_smallest_size - smallest_size;
+                    while size_to_distribute > 0.01 && !growable_elements.is_empty() {
+                        let mut smallest_size = f32::MAX;
+                        let mut second_smallest_size = f32::MAX;
+                        let mut width_to_add = size_to_distribute;
+
+                        for child_index in &growable_elements {
+                            let child_size = if left_to_right { self.layout_elements[*child_index].element.final_size_x } else { self.layout_elements[*child_index].element.final_size_y };
+                            match child_size.total_cmp(&smallest_size) {
+                                Ordering::Less => {
+                                    second_smallest_size = smallest_size;
+                                    smallest_size = child_size;
+                                },
+                                Ordering::Equal => { continue; },
+                                Ordering::Greater => {
+                                    second_smallest_size = f32::min(second_smallest_size, child_size);
+                                    width_to_add = second_smallest_size - smallest_size;
+                                }
                             }
                         }
-                    }
 
-                    width_to_add = f32::min(width_to_add, size_to_distribute / (growable_elements.len() as f32));
+                        width_to_add = f32::min(width_to_add, size_to_distribute / (growable_elements.len() as f32));
 
-                    for child_index in &growable_elements {
-                        let child_size =
-                            if left_to_right { &mut self.layout_elements[*child_index].element.final_size_x }
-                            else { &mut self.layout_elements[*child_index].element.final_size_y };
-                        let initial_size = *child_size;
+                        for child_index in &growable_elements {
+                            let grow_elements_unevenly = self.layout_elements[*child_index].element.layout.grow_elements_unevenly;
+                            let child_size =
+                                if left_to_right { &mut self.layout_elements[*child_index].element.final_size_x }
+                                else { &mut self.layout_elements[*child_index].element.final_size_y };
+                            let initial_size = *child_size;
 
-                        // For some reason this check makes ONLY the smallest element grow (sort of) bleghhhh
-                        // if *child_size == smallest_size {
-                            *child_size += width_to_add;
-                            size_to_distribute -= *child_size - initial_size;
-                        // }
+                            // For some reason this check makes ONLY the smallest element grow (sort of) bleghhhh
+                            if *child_size == smallest_size && !grow_elements_unevenly {
+                                *child_size += width_to_add;
+                                size_to_distribute -= *child_size - initial_size;
+                            }
+                        }
                     }
                 }
             } else {
