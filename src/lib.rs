@@ -637,57 +637,36 @@ pub mod catplush_main {
                 }
             }
 
-            if aligning_along_axis {
-                let distance_to_add = parent_size - padding as f32 - child_gap as f32 - inner_content_size;
-                for child_index in self.layout_elements[current_index].child_elements.clone() {
-                    if left_to_right {
-                        match self.layout_elements[current_index].element.layout.child_alignment.x {
-                            ChildXAlignment::Left => {},
-                            ChildXAlignment::Center => {
-                                self.layout_elements[child_index].element.final_pos_x += distance_to_add/2.0
-                            },
-                            ChildXAlignment::Right => {
-                                self.layout_elements[child_index].element.final_pos_x += distance_to_add
-                            },
-                        }
-                    } else {
-                        match self.layout_elements[current_index].element.layout.child_alignment.y {
-                            ChildYAlignment::Top => {},
-                            ChildYAlignment::Center => {
-                                self.layout_elements[child_index].element.final_pos_y += distance_to_add/2.0;
-                            },
-                            ChildYAlignment::Bottom => {
-                                self.layout_elements[child_index].element.final_pos_y += distance_to_add;
-                            },
-                        }
-                    }
-                }
-            } else {
-                for child_index in self.layout_elements[current_index].child_elements.clone() {
-                    let distance_to_add =
-                        if left_to_right { parent_size - padding as f32 - self.layout_elements[child_index].element.final_size_x }
-                        else { parent_size - padding as f32 - self.layout_elements[child_index].element.final_size_y };
+            let mut distance_to_add = parent_size - padding as f32 - child_gap as f32 - inner_content_size;
 
-                    if left_to_right {
-                        match self.layout_elements[current_index].element.layout.child_alignment.x {
-                            ChildXAlignment::Left => {},
-                            ChildXAlignment::Center => {
-                                self.layout_elements[child_index].element.final_pos_x += distance_to_add/2.0;
-                            },
-                            ChildXAlignment::Right => {
-                                self.layout_elements[child_index].element.final_pos_x += distance_to_add;
-                            },
-                        }
-                    } else {
-                        match self.layout_elements[current_index].element.layout.child_alignment.y {
-                            ChildYAlignment::Top => {},
-                            ChildYAlignment::Center => {
-                                self.layout_elements[child_index].element.final_pos_y += distance_to_add/2.0;
-                            },
-                            ChildYAlignment::Bottom => {
-                                self.layout_elements[child_index].element.final_pos_y += distance_to_add;
-                            },
-                        }
+            for child_index in self.layout_elements[current_index].child_elements.clone() {
+                if !aligning_along_axis {
+                    distance_to_add =
+                        if left_to_right {
+                            parent_size - padding as f32 - self.layout_elements[child_index].element.final_size_x
+                        } else {
+                            parent_size - padding as f32 - self.layout_elements[child_index].element.final_size_y
+                        };
+                }
+                if left_to_right {
+                    match self.layout_elements[current_index].element.layout.child_alignment.x {
+                        ChildXAlignment::Left => {},
+                        ChildXAlignment::Center => {
+                            self.layout_elements[child_index].element.final_pos_x += distance_to_add/2.0
+                        },
+                        ChildXAlignment::Right => {
+                            self.layout_elements[child_index].element.final_pos_x += distance_to_add
+                        },
+                    }
+                } else {
+                    match self.layout_elements[current_index].element.layout.child_alignment.y {
+                        ChildYAlignment::Top => {},
+                        ChildYAlignment::Center => {
+                            self.layout_elements[child_index].element.final_pos_y += distance_to_add/2.0;
+                        },
+                        ChildYAlignment::Bottom => {
+                            self.layout_elements[child_index].element.final_pos_y += distance_to_add;
+                        },
                     }
                 }
             }

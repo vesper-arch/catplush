@@ -210,7 +210,8 @@ fn main() {
                     .child_gap(10));
 
                     ui.open_element(UiElement::new()
-                        .sizing(SizingMode::Grow, SizingMode::Fit)
+                        .sizing(SizingMode::Grow, SizingMode::Grow)
+                        .alignment(ChildXAlignment::Right, ChildYAlignment::Center)
                         .child_gap(10));
 
                         card_cell(&mut ui, &uiua_bitmap, "Alpha", watcher_rare_skill_image, CardColor::PURPLE);
@@ -224,7 +225,8 @@ fn main() {
                     ui.close_element();
 
                     ui.open_element(UiElement::new()
-                        .sizing(SizingMode::Grow, SizingMode::Fit)
+                        .sizing(SizingMode::Grow, SizingMode::Grow)
+                        .alignment(ChildXAlignment::Right, ChildYAlignment::Center)
                         .child_gap(10));
 
                         card_cell(&mut ui, &uiua_bitmap, "Bane", silent_common_attack_image, CardColor::GREEN);
