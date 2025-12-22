@@ -76,13 +76,13 @@ pub mod catplush_main {
             Self (r, g, b, a)
         }
 
-        pub fn transparent() -> Self { ObjectColor(0, 0, 0, 0) }
+        pub const TRANSPARENT: Self = ObjectColor(0, 0, 0, 0);
 
-        pub fn black() -> Self { ObjectColor(0  , 0  , 0  , 255) }
-        pub fn white() -> Self { ObjectColor(255, 255, 255, 255) }
-        pub fn red()   -> Self { ObjectColor(255, 0  , 0  , 255) }
-        pub fn green() -> Self { ObjectColor(0  , 255, 0  , 255) }
-        pub fn blue()  -> Self { ObjectColor(0  , 0  , 255, 255) }
+        pub const BLACK: Self = ObjectColor(0  , 0  , 0  , 255);
+        pub const WHITE: Self = ObjectColor(255, 255, 255, 255);
+        pub const RED:   Self = ObjectColor(255, 0  , 0  , 255);
+        pub const GREEN: Self = ObjectColor(0  , 255, 0  , 255);
+        pub const BLUE:  Self = ObjectColor(0  , 0  , 255, 255);
     }
 
     #[derive(PartialEq)]
