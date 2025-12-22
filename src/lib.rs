@@ -354,9 +354,7 @@ pub mod catplush_main {
                 width: SizingMode::Fixed((bitmap.cell_size.x * font_size_factor) as i32 * text.len() as i32),
                 height: SizingMode::Fixed((bitmap.cell_size.y * font_size_factor) as i32)
             };
-            
-            let lines: Vec<String> = vec![];
-            
+
             self.object_type = ObjectType::Text( CatplushTextData { bitmap: bitmap.clone(), lines: vec![text.to_string()], font_size } );
 
             self

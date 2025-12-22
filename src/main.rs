@@ -37,7 +37,7 @@ fn card_cell(ui: &mut CatplushContext, bitmap: &BitmapConfiguration, card_name: 
     ui.open_element(UiElement::new()
         .rectangle(card_color, CornerRadius::all(10.0))
         .sizing(SizingMode::Grow, SizingMode::Fixed(40))
-        .padding(Padding::hv(15, 5))
+        .padding(Padding::new(10, 15, 5, 5))
         .alignment(ChildXAlignment::Left, ChildYAlignment::Center)
         .child_gap(5));
 
@@ -49,7 +49,7 @@ fn card_cell(ui: &mut CatplushContext, bitmap: &BitmapConfiguration, card_name: 
         ui.close_element();
 
         ui.open_element(UiElement::new()
-            .text(bitmap, card_name, 18));
+            .text(bitmap, card_name, 17));
         ui.close_element();
 
     ui.close_element();
