@@ -48,16 +48,6 @@ pub mod catplush_main {
         child_elements: Vec<usize>
     }
 
-    impl Node {
-       fn new(element: UiElement, parent: usize) -> Self {
-           Node {
-               parent: Some(parent),
-               element,
-               child_elements: vec![]
-           }
-       }
-    }
-
     ///////////////////////////////////////////////////////
     //////////////// Element Structures ///////////////////
     ///////////////////////////////////////////////////////
@@ -262,7 +252,8 @@ pub mod catplush_main {
 
     pub struct CatplushTextData {
         pub(crate) bitmap: BitmapConfiguration,
-        pub(crate) lines: Vec<String>,
+        pub(crate) text: String,
+        pub(crate) lines: Vec<&'static str>,
         pub(crate) font_size: u32
     }
 
@@ -355,7 +346,7 @@ pub mod catplush_main {
                 height: SizingMode::Fixed((bitmap.cell_size.y * font_size_factor) as i32)
             };
 
-            self.object_type = ObjectType::Text( CatplushTextData { bitmap: bitmap.clone(), lines: vec![text.to_string()], font_size } );
+            self.object_type = ObjectType::Text( CatplushTextData { bitmap: bitmap.clone(), text: text.to_string(), lines: vec![], font_size } );
 
             self
         }
@@ -416,80 +407,92 @@ pub mod catplush_main {
         //////////// Layout Building Functions //////////////
         pub fn open_element(&mut self, element: UiElement) {
             let new_element_index = self.layout_elements.len();
-            let mut parent_element: usize = 0;
+            let mut parent_index: Option<usize> = None;
 
             if !self.open_layout_elements.is_empty() {
                 self.layout_elements[*self.open_layout_elements.last_mut().unwrap()].child_elements.push(new_element_index);
-                parent_element = *self.open_layout_elements.last().unwrap();
+                parent_index = Some(*self.open_layout_elements.last().unwrap());
             }
 
             self.open_layout_elements.push(new_element_index);
-            self.layout_elements.push(Node::new(element, parent_element));
+            self.layout_elements.push(Node {
+                parent: parent_index,
+                element,
+                child_elements: vec![]
+            });
         }
 
         pub fn close_element(&mut self) {
-            // Naturally gets called in Depth First Order so we can do fixed sizing and fit sizing
-            // widths right here
-
-            // This function currently does both widths and heights in one pass, which will change once text wrapping is implemented.
             if self.open_layout_elements.len() <= 1 {
                 return
             }
-
-            let layout_slice = &mut self.layout_elements[..];
-            let last_opened_element = *self.open_layout_elements.last().unwrap();
-            let parent_element = layout_slice[last_opened_element].parent.unwrap();
-
-            let [parent_node, closing_node] = layout_slice.get_disjoint_mut([parent_element, last_opened_element]).unwrap();
-
-            // Padding
-            closing_node.element.final_size_x += (closing_node.element.layout.padding.left + closing_node.element.layout.padding.right) as f32;
-            closing_node.element.final_size_y += (closing_node.element.layout.padding.top + closing_node.element.layout.padding.bottom) as f32;
-
-            let child_gap = (closing_node.child_elements.len() as i32 - 1) * closing_node.element.layout.child_gap;
-
-            if closing_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
-                closing_node.element.final_size_x += child_gap as f32;
-            } else {
-                closing_node.element.final_size_y += child_gap as f32;
-            }
-
-            // Fixed Sizing
-            match closing_node.element.layout.sizing.width {
-                SizingMode::Fixed(size) => {closing_node.element.final_size_x = size as f32},
-                SizingMode::Fit => {},
-                SizingMode::Grow => {},
-            }
-            match closing_node.element.layout.sizing.height {
-                SizingMode::Fixed(size) => {closing_node.element.final_size_y = size as f32},
-                SizingMode::Fit => {},
-                SizingMode::Grow => {},
-            }
-
-
-            // Fit Sizing
-            if parent_node.element.layout.sizing.width == SizingMode::Fit || parent_node.element.layout.sizing.width == SizingMode::Grow {
-                if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
-                    parent_node.element.final_size_x += closing_node.element.final_size_x;
-                } else {
-                    parent_node.element.final_size_x = f32::max(closing_node.element.final_size_x, parent_node.element.final_size_x)
-                }
-
-            }
-            if parent_node.element.layout.sizing.height == SizingMode::Fit || parent_node.element.layout.sizing.height == SizingMode::Grow {
-                if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
-                    parent_node.element.final_size_y = f32::max(closing_node.element.final_size_y, parent_node.element.final_size_y);
-                } else {
-                    parent_node.element.final_size_y += closing_node.element.final_size_y;
-                }
-            }
-
             self.open_layout_elements.pop();
         }
 
         pub(crate) fn size_all(&mut self) {
+            self.initial_sizing_along_axis(true, 0);
             self.size_along_axis(true, 0);
+            self.initial_sizing_along_axis(false, 0);
             self.size_along_axis(false, 0);
+        }
+
+        pub(crate) fn initial_sizing_along_axis(&mut self, left_to_right: bool, current_index: usize) {
+            for child_index in self.layout_elements[current_index].child_elements.clone() {
+                self.initial_sizing_along_axis(left_to_right, child_index);
+            }
+
+            if self.layout_elements[current_index].parent.is_none() {
+                return;
+            }
+
+            let parent_index = self.layout_elements[current_index].parent.unwrap();
+
+            let [current_node, parent_node] = self.layout_elements.get_disjoint_mut([current_index, parent_index]).unwrap();
+
+            let child_gap = (current_node.child_elements.len() as i32 - 1) * current_node.element.layout.child_gap;
+
+            // Padding
+            if left_to_right {
+                current_node.element.final_size_x += (current_node.element.layout.padding.left + current_node.element.layout.padding.right) as f32;
+
+                if current_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+                    current_node.element.final_size_x += child_gap as f32;
+                }
+
+                match current_node.element.layout.sizing.width {
+                    SizingMode::Fixed(size) => {current_node.element.final_size_x = size as f32},
+                    SizingMode::Fit => {},
+                    SizingMode::Grow => {},
+                }
+
+                if parent_node.element.layout.sizing.width == SizingMode::Fit || parent_node.element.layout.sizing.width == SizingMode::Grow {
+                    if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+                        parent_node.element.final_size_x += current_node.element.final_size_x;
+                    } else {
+                        parent_node.element.final_size_x = f32::max(current_node.element.final_size_x, parent_node.element.final_size_x)
+                    }
+                }
+            } else {
+                current_node.element.final_size_y += (current_node.element.layout.padding.top + current_node.element.layout.padding.bottom) as f32;
+
+                if current_node.element.layout.layout_direction == ChildLayoutDirection::TopToBottom {
+                    current_node.element.final_size_y += child_gap as f32;
+                }
+
+                match current_node.element.layout.sizing.height {
+                    SizingMode::Fixed(size) => {current_node.element.final_size_y = size as f32},
+                    SizingMode::Fit => {},
+                    SizingMode::Grow => {},
+                }
+
+                if parent_node.element.layout.sizing.height == SizingMode::Fit || parent_node.element.layout.sizing.height == SizingMode::Grow {
+                    if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
+                        parent_node.element.final_size_y = f32::max(current_node.element.final_size_y, parent_node.element.final_size_y)
+                    } else {
+                        parent_node.element.final_size_y += current_node.element.final_size_y;
+                    }
+                }
+            }
         }
 
         pub(crate) fn size_along_axis(&mut self, left_to_right: bool, current_index: usize) {
@@ -583,8 +586,14 @@ pub mod catplush_main {
                 }
             }
 
-            for child in self.layout_elements[current_index].child_elements.clone() {
-                self.size_along_axis(left_to_right, child);
+            for child_index in self.layout_elements[current_index].child_elements.clone() {
+                self.size_along_axis(left_to_right, child_index);
+            }
+        }
+
+        pub(crate) fn wrap_text(&mut self, current_index: usize) {
+            for child_index in self.layout_elements[current_index].child_elements.clone() {
+                self.wrap_text(child_index);
             }
         }
 
@@ -748,7 +757,7 @@ pub mod catplush_main {
 
     pub(crate) struct TextRenderData {
         pub(crate) bitmap: BitmapConfiguration,
-        pub(crate) lines: Vec<String>,
+        pub(crate) lines: Vec<&'static str>,
         pub(crate) font_size: u32
     }
 
@@ -832,7 +841,7 @@ pub mod catplush_friend {
         renderer.draw();
     }
 
-    pub(crate) fn render_text(renderer: &mut Renderer, lines: &[String], position: Vec2, bitmap: BitmapConfiguration, font_size: u32) {
+    pub(crate) fn render_text(renderer: &mut Renderer, lines: &[&'static str], position: Vec2, bitmap: BitmapConfiguration, font_size: u32) {
         for line in lines {
             for (i, char) in line.chars().enumerate() {
                 let scale_factor = font_size as f32 / bitmap.cell_size.y;

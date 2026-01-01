@@ -133,10 +133,9 @@ fn main() {
             .child_gap(10));
 
             ui.open_element(UiElement::new()
-                .rectangle(ObjectColor(0, 105, 143, 255), CornerRadius::all(17.0))
-                .border(DARK_BORDER, BorderWidth::all(3))
-                .sizing(SizingMode::Grow, SizingMode::Fixed(50))
-                .padding(Padding::all(10))
+                .rectangle(DARK_BORDER, CornerRadius::all(15.0))
+                .sizing(SizingMode::Grow, SizingMode::Fixed(40))
+                .padding(Padding::all(5))
                 .child_gap(10));
 
                 ui.open_element(topbar_button(100)
