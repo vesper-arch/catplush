@@ -253,8 +253,9 @@ pub mod catplush_main {
     pub struct CatplushTextData {
         pub(crate) bitmap: BitmapConfiguration,
         pub(crate) text: String,
-        pub(crate) lines: Vec<&'static str>,
-        pub(crate) font_size: u32
+        pub(crate) font_size: u32,
+        pub(crate) split_indices: Vec<u32>,
+        pub(crate) break_on_overflow: bool
     }
 
     #[derive(Default)]
@@ -284,6 +285,7 @@ pub mod catplush_main {
     }
 
     impl UiElement {
+        /// Returns a new empty element. It will fit to its contents by default.
         pub fn new() -> Self {
             Self::default()
         }
@@ -295,6 +297,7 @@ pub mod catplush_main {
             self
         }
 
+        /// Gives a rectangle element a colored border.
         pub fn border(mut self, stroke_color: ObjectColor, border_width: BorderWidth) -> Self {
             self.border_width = border_width;
             self.stroke_color = stroke_color;
@@ -338,24 +341,37 @@ pub mod catplush_main {
             self
         }
 
-        pub fn text(mut self, bitmap: &BitmapConfiguration, text: &str, font_size: u32) -> Self {
+        pub fn text(mut self, bitmap: &BitmapConfiguration, text: &str, font_size: u32, break_on_overflow: bool) -> Self {
             let font_size_factor = font_size as f32 / bitmap.cell_size.y;
 
             self.layout.sizing = Sizing {
-                width: SizingMode::Fixed((bitmap.cell_size.x * font_size_factor) as i32 * text.len() as i32),
+                width: SizingMode::Fixed(((bitmap.cell_size.x * font_size_factor) * text.len() as f32 - 1.0) as i32),
                 height: SizingMode::Fixed((bitmap.cell_size.y * font_size_factor) as i32)
             };
 
-            self.object_type = ObjectType::Text( CatplushTextData { bitmap: bitmap.clone(), text: text.to_string(), lines: vec![], font_size } );
+            self = self.limit_width(0, ((bitmap.cell_size.x * font_size_factor) * text.len() as f32 - 1.0) as i32);
+
+            // The .map call gets only the indexes of the matches.
+            let new_lines: Vec<u32> = text.match_indices("\n").map(|x| x.0 as u32).collect();
+
+            self.object_type = ObjectType::Text(CatplushTextData {
+                bitmap: bitmap.clone(),
+                text: text.to_string(),
+                font_size,
+                split_indices: new_lines,
+                break_on_overflow
+            });
 
             self
         }
 
+        /// Sets the gap between each child element.
         pub fn child_gap(mut self, amount: i32) -> Self {
             self.layout.child_gap = amount;
             self
         }
 
+        /// Sets the inside padding.
         pub fn padding(mut self, padding: Padding) -> Self {
             self.layout.padding = padding;
             self
@@ -366,6 +382,8 @@ pub mod catplush_main {
             self
         }
 
+        /// This element will stay the same aspect ratio as its initial size when it is resized.
+        /// (Not implemented)
         pub fn keep_aspect_ratio(mut self) -> Self {
             self.layout.keep_aspect_ratio = true;
             self
@@ -376,13 +394,13 @@ pub mod catplush_main {
             self
         }
 
-        pub fn limit_width(mut self, width_limits: SizeLimit) -> Self {
-            self.layout.size_constraints.width = width_limits;
+        pub fn limit_width(mut self, min: i32, max: i32) -> Self {
+            self.layout.size_constraints.width = SizeLimit { min, max };
             self
         }
 
-        pub fn limit_height(mut self, height_limits: SizeLimit) -> Self {
-            self.layout.size_constraints.height = height_limits;
+        pub fn limit_height(mut self, min: i32, max: i32) -> Self {
+            self.layout.size_constraints.height = SizeLimit { min, max };
             self
         }
 
@@ -401,6 +419,26 @@ pub mod catplush_main {
         //     self.id = Some(id);
         //     self
         // }
+    }
+
+    pub fn split_multiple_indices<'a>(text: &'a str, indices_to_split: &[usize]) -> Vec<&'a str> {
+        if indices_to_split.is_empty() {
+            return vec![text]
+        }
+        
+        let mut segments: Vec<&str> = vec![];
+        let mut temporary_split: (&str, &str);
+
+        for (index, split) in indices_to_split.iter().enumerate() {
+            temporary_split = text.split_at(*split);
+
+            if index == 0 {
+                segments.push(temporary_split.0);
+            }
+            segments.push(temporary_split.1);
+        }
+
+        segments
     }
 
     impl CatplushContext {
@@ -432,6 +470,7 @@ pub mod catplush_main {
         pub(crate) fn size_all(&mut self) {
             self.initial_sizing_along_axis(true, 0);
             self.size_along_axis(true, 0);
+            self.wrap_text(0);
             self.initial_sizing_along_axis(false, 0);
             self.size_along_axis(false, 0);
         }
@@ -446,7 +485,6 @@ pub mod catplush_main {
             }
 
             let parent_index = self.layout_elements[current_index].parent.unwrap();
-
             let [current_node, parent_node] = self.layout_elements.get_disjoint_mut([current_index, parent_index]).unwrap();
 
             let child_gap = (current_node.child_elements.len() as i32 - 1) * current_node.element.layout.child_gap;
@@ -573,6 +611,43 @@ pub mod catplush_main {
                             }
                         }
                     }
+                } else if size_to_distribute < 0.0 {
+                    // while size_to_distribute < -0.001 && !growable_elements.is_empty() {
+                    //     let mut largest_size = 0.0;
+                    //     let mut second_largest_size = 0.0;
+                    //     let mut width_to_add = size_to_distribute;
+
+                    //     for child_index in &growable_elements {
+                    //         let child_size = if left_to_right { self.layout_elements[*child_index].element.final_size_x } else { self.layout_elements[*child_index].element.final_size_y };
+                    //         match child_size.total_cmp(&largest_size) {
+                    //             Ordering::Greater => {
+                    //                 second_largest_size = largest_size;
+                    //                 largest_size = child_size;
+                    //             },
+                    //             Ordering::Equal => { continue; },
+                    //             Ordering::Less => {
+                    //                 second_largest_size = f32::min(second_largest_size, child_size);
+                    //                 width_to_add = second_largest_size - largest_size;
+                    //             }
+                    //         }
+                    //     }
+
+                    //     width_to_add = f32::min(width_to_add, size_to_distribute / (growable_elements.len() as f32));
+
+                    //     for child_index in &growable_elements {
+                    //         let grow_elements_unevenly = self.layout_elements[*child_index].element.layout.grow_elements_unevenly;
+                    //         let child_size =
+                    //             if left_to_right { &mut self.layout_elements[*child_index].element.final_size_x }
+                    //             else { &mut self.layout_elements[*child_index].element.final_size_y };
+                    //         let initial_size = *child_size;
+
+                    //         // For some reason this check makes ONLY the smallest element grow (sort of) bleghhhh
+                    //         if *child_size == largest_size && !grow_elements_unevenly {
+                    //             *child_size += width_to_add;
+                    //             size_to_distribute -= *child_size - initial_size;
+                    //         }
+                    //     }
+                    // }
                 }
             } else {
                 for child_index in &growable_elements {
@@ -592,8 +667,70 @@ pub mod catplush_main {
         }
 
         pub(crate) fn wrap_text(&mut self, current_index: usize) {
+            // Not sure if this actually does need a depth first search
             for child_index in self.layout_elements[current_index].child_elements.clone() {
                 self.wrap_text(child_index);
+            }
+
+            if self.layout_elements[current_index].parent.is_none() {
+                return;
+            }
+
+            let parent_index = self.layout_elements[current_index].parent.unwrap();
+
+            let character_width: f32;
+            let line_height: f32;
+            let text: String;
+            let new_lines: &[u32];
+            let break_on_overflow: bool;
+
+            match &mut self.layout_elements[current_index].element.object_type {
+                ObjectType::Text(text_data) => {
+                    character_width = text_data.bitmap.cell_size.x;
+                    line_height = text_data.bitmap.cell_size.y;
+                    text = text_data.text.clone();
+                    new_lines = &mut text_data.split_indices;
+                    break_on_overflow = text_data.break_on_overflow
+                },
+                _ => { return }
+            }
+
+            let padding = self.layout_elements[parent_index].element.layout.padding.left + self.layout_elements[parent_index].element.layout.padding.right;
+            let child_gap = (self.layout_elements[parent_index].child_elements.len() as i32 - 1) * self.layout_elements[parent_index].element.layout.child_gap;
+            let parent_size = self.layout_elements[parent_index].element.final_size_x;
+
+            let mut inner_content_size = 0.0;
+            for child in self.layout_elements[current_index].child_elements.clone() {
+                inner_content_size += self.layout_elements[child].element.final_size_x;
+            }
+
+            let available_width = parent_size - padding as f32 - child_gap as f32 - inner_content_size;
+            let number_of_wraps = ((character_width * text.len() as f32) / available_width) as i32;
+            let mut indexes_to_wrap: Vec<u32> = vec![];
+            if number_of_wraps == 0 { return }
+
+            for _ in 1..number_of_wraps {
+                let character_on_border: u32 = (available_width / character_width) as u32;
+
+                let last_split = *indexes_to_wrap.last().unwrap_or(&0) as usize;
+                let space_to_wrap: usize = match &text[last_split..character_on_border as usize].rfind(" ") {
+                    Some(index) => { *index },
+                    None => {
+                        if break_on_overflow {
+                            character_on_border as usize
+                        } else {
+                            continue;
+                        }
+                    }
+                };
+
+                indexes_to_wrap.push(space_to_wrap as u32);
+                self.layout_elements[current_index].element.final_size_y += line_height;
+            }
+
+            // what is this syntax huh
+            if let ObjectType::Text(text_data) = &mut self.layout_elements[current_index].element.object_type {
+                text_data.split_indices.append(&mut indexes_to_wrap);
             }
         }
 
@@ -719,7 +856,12 @@ pub mod catplush_main {
                         RenderData::RectangleData(RectangleRenderData { color: element.color, stroke_color: element.stroke_color, corner_radius: element.corner_radius, border_width: element.border_width })
                     },
                     ObjectType::Text(data) => {
-                        RenderData::TextData(TextRenderData { bitmap: data.bitmap.clone(), lines: data.lines.clone(), font_size: data.font_size })
+                        RenderData::TextData(TextRenderData {
+                            bitmap: data.bitmap.clone(),
+                            text: data.text.clone(),
+                            font_size: data.font_size,
+                            split_indices: data.split_indices.clone()
+                        })
                     },
                     ObjectType::Image(data) => {
                         RenderData::ImageData(TextureRenderData { texture_id: data.texture_id, width: data.width, height: data.height })
@@ -735,9 +877,9 @@ pub mod catplush_main {
         }
     }
 
-    //////////////////////////////////////////////////////////
-    ////////////////  Render Structures  /////////////////////
-    //////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////
+    ////////////////  Render Structures  ////////////////
+    /////////////////////////////////////////////////////
 
     #[derive(Copy, Clone)]
     pub(crate) struct BoundingBox {
@@ -757,8 +899,9 @@ pub mod catplush_main {
 
     pub(crate) struct TextRenderData {
         pub(crate) bitmap: BitmapConfiguration,
-        pub(crate) lines: Vec<&'static str>,
-        pub(crate) font_size: u32
+        pub(crate) text: String,
+        pub(crate) font_size: u32,
+        pub(crate) split_indices: Vec<u32>
     }
 
     pub(crate) struct TextureRenderData {
@@ -833,7 +976,7 @@ pub mod catplush_friend {
                     ));
                 },
                 RenderData::TextData(data) => {
-                    render_text(renderer, &data.lines, Vec2::new(render_command.bounding_box.x, render_command.bounding_box.y), data.bitmap, data.font_size);
+                    render_text(renderer, data.text, &data.split_indices, Vec2::new(render_command.bounding_box.x, render_command.bounding_box.y), data.bitmap, data.font_size);
                 }
             }
         }
@@ -841,7 +984,9 @@ pub mod catplush_friend {
         renderer.draw();
     }
 
-    pub(crate) fn render_text(renderer: &mut Renderer, lines: &[&'static str], position: Vec2, bitmap: BitmapConfiguration, font_size: u32) {
+    pub(crate) fn render_text(renderer: &mut Renderer, text: String, split_indexes: &[u32], position: Vec2, bitmap: BitmapConfiguration, font_size: u32) {
+        let actual_split_indexes: Vec<usize> = split_indexes.iter().map(|x| *x as usize).collect();
+        let lines = split_multiple_indices(&text, &actual_split_indexes);
         for line in lines {
             for (i, char) in line.chars().enumerate() {
                 let scale_factor = font_size as f32 / bitmap.cell_size.y;

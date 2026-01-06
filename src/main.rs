@@ -49,7 +49,7 @@ fn card_cell(ui: &mut CatplushContext, bitmap: &BitmapConfiguration, card_name: 
         ui.close_element();
 
         ui.open_element(UiElement::new()
-            .text(bitmap, card_name, 17));
+            .text(bitmap, card_name, 17, true));
         ui.close_element();
 
     ui.close_element();
@@ -142,14 +142,14 @@ fn main() {
                     .border(MONOCHROME_HIGHLIGHT, BorderWidth::all(2)));
 
                     ui.open_element(UiElement::new()
-                        .text(&uiua_bitmap, "File", 16));
+                        .text(&uiua_bitmap, "File", 16, true));
                     ui.close_element();
 
                 ui.close_element();
 
                 ui.open_element(topbar_button(75));
                     ui.open_element(UiElement::new()
-                        .text(&uiua_bitmap, "Edit", 16));
+                        .text(&uiua_bitmap, "Edit", 16, true));
                     ui.close_element();
                 ui.close_element();
 
@@ -158,7 +158,7 @@ fn main() {
 
                 ui.open_element(topbar_button(75));
                     ui.open_element(UiElement::new()
-                        .text(&uiua_bitmap, "Close", 16));
+                        .text(&uiua_bitmap, "Close", 16, true));
                     ui.close_element();
                 ui.close_element();
 
@@ -189,7 +189,7 @@ fn main() {
                         ui.close_element();
 
                         ui.open_element(UiElement::new()
-                            .text(&uiua_bitmap, "Cards", 22));
+                            .text(&uiua_bitmap, "Cards", 22, true));
                         ui.close_element();
 
                     ui.close_element();
@@ -218,9 +218,9 @@ fn main() {
                         card_cell(&mut ui, &uiua_bitmap, "Blasphemy", watcher_rare_skill_image, CardColor::PURPLE);
                         card_cell(&mut ui, &uiua_bitmap, "Conjure Blade", watcher_rare_skill_image, CardColor::PURPLE);
 
-                        card_cell(&mut ui, &uiua_bitmap, "Combust", ironclad_uncommon_power_image, CardColor::RED);
-                        card_cell(&mut ui, &uiua_bitmap, "Evolve", ironclad_uncommon_power_image, CardColor::RED);
-                        card_cell(&mut ui, &uiua_bitmap, "Feel No Pain", ironclad_uncommon_power_image, CardColor::RED);
+                        // card_cell(&mut ui, &uiua_bitmap, "Combust", ironclad_uncommon_power_image, CardColor::RED);
+                        // card_cell(&mut ui, &uiua_bitmap, "Evolve", ironclad_uncommon_power_image, CardColor::RED);
+                        // card_cell(&mut ui, &uiua_bitmap, "Feel No Pain", ironclad_uncommon_power_image, CardColor::RED);
 
                     ui.close_element();
 
@@ -234,9 +234,25 @@ fn main() {
                         card_cell(&mut ui, &uiua_bitmap, "Dagger Spray", silent_common_attack_image, CardColor::GREEN);
                         card_cell(&mut ui, &uiua_bitmap, "Poisoned Stab", silent_common_attack_image, CardColor::GREEN);
 
-                        card_cell(&mut ui, &uiua_bitmap, "Thunder Strike", defect_rare_attack_image, CardColor::BLUE);
-                        card_cell(&mut ui, &uiua_bitmap, "Hyperbeam", defect_rare_attack_image, CardColor::BLUE);
-                        card_cell(&mut ui, &uiua_bitmap, "All for One", defect_rare_attack_image, CardColor::BLUE);
+                        // card_cell(&mut ui, &uiua_bitmap, "Thunder Strike", defect_rare_attack_image, CardColor::BLUE);
+                        // card_cell(&mut ui, &uiua_bitmap, "Hyperbeam", defect_rare_attack_image, CardColor::BLUE);
+                        // card_cell(&mut ui, &uiua_bitmap, "All for One", defect_rare_attack_image, CardColor::BLUE);
+
+                    ui.close_element();
+
+                    ui.open_element(UiElement::new()
+                        .sizing(SizingMode::Grow, SizingMode::Grow)
+                        .padding(Padding::all(20))
+                        .child_gap(10)
+                        .layout_direction(ChildLayoutDirection::TopToBottom));
+
+                        ui.open_element(UiElement::new()
+                            .text(&uiua_bitmap, "Panic Button", 22, true));
+                        ui.close_element();
+
+                        ui.open_element(UiElement::new()
+                            .text(&uiua_bitmap, "Gain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.", 20, true));
+                        ui.close_element();
 
                     ui.close_element();
 
