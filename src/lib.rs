@@ -625,43 +625,6 @@ pub mod catplush_main {
                             }
                         }
                     }
-                } else if size_to_distribute < 0.0 {
-                    // while size_to_distribute < -0.001 && !growable_elements.is_empty() {
-                    //     let mut largest_size = 0.0;
-                    //     let mut second_largest_size = 0.0;
-                    //     let mut width_to_add = size_to_distribute;
-
-                    //     for child_index in &growable_elements {
-                    //         let child_size = if left_to_right { self.layout_elements[*child_index].element.final_size_x } else { self.layout_elements[*child_index].element.final_size_y };
-                    //         match child_size.total_cmp(&largest_size) {
-                    //             Ordering::Greater => {
-                    //                 second_largest_size = largest_size;
-                    //                 largest_size = child_size;
-                    //             },
-                    //             Ordering::Equal => { continue; },
-                    //             Ordering::Less => {
-                    //                 second_largest_size = f32::min(second_largest_size, child_size);
-                    //                 width_to_add = second_largest_size - largest_size;
-                    //             }
-                    //         }
-                    //     }
-
-                    //     width_to_add = f32::min(width_to_add, size_to_distribute / (growable_elements.len() as f32));
-
-                    //     for child_index in &growable_elements {
-                    //         let grow_elements_unevenly = self.layout_elements[*child_index].element.layout.grow_elements_unevenly;
-                    //         let child_size =
-                    //             if left_to_right { &mut self.layout_elements[*child_index].element.final_size_x }
-                    //             else { &mut self.layout_elements[*child_index].element.final_size_y };
-                    //         let initial_size = *child_size;
-
-                    //         // For some reason this check makes ONLY the smallest element grow (sort of) bleghhhh
-                    //         if *child_size == largest_size && !grow_elements_unevenly {
-                    //             *child_size += width_to_add;
-                    //             size_to_distribute -= *child_size - initial_size;
-                    //         }
-                    //     }
-                    // }
                 }
             } else {
                 for child_index in &growable_elements {
