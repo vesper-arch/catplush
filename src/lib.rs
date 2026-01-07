@@ -110,7 +110,7 @@ pub mod catplush_main {
 
     impl Default for SizeLimit {
         fn default() -> Self {
-            Self {min: 0, max: 999999999}
+            Self {min: 0, max: i32::MAX}
         }
     }
 
@@ -572,11 +572,15 @@ pub mod catplush_main {
 
 
                 if size_to_distribute > 0.0 && !growable_elements.is_empty() {
+                    // If the element is able to grow and is not at its max size, keep growing it.
+                    // I apologize for this closure.
                     growable_elements.retain(
                         |&x|
-                        (left_to_right && self.layout_elements[x].element.layout.sizing.width == SizingMode::Grow)
+                        left_to_right && self.layout_elements[x].element.final_size_x <= self.layout_elements[x].element.layout.size_constraints.width.max as f32
+                        && self.layout_elements[x].element.layout.sizing.width == SizingMode::Grow
                         ||
-                        (!left_to_right && self.layout_elements[x].element.layout.sizing.height == SizingMode::Grow)
+                        !left_to_right && self.layout_elements[x].element.final_size_y <= self.layout_elements[x].element.layout.size_constraints.height.max as f32
+                        && self.layout_elements[x].element.layout.sizing.height == SizingMode::Grow
                     );
 
                     while size_to_distribute > 0.01 && !growable_elements.is_empty() {
@@ -616,7 +620,6 @@ pub mod catplush_main {
                                 *child_size += width_to_add;
                                 if *child_size >= max_size {
                                     *child_size = max_size;
-
                                 }
                                 size_to_distribute -= *child_size - initial_size;
                             }
