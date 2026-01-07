@@ -425,7 +425,7 @@ pub mod catplush_main {
         if indices_to_split.is_empty() {
             return vec![text]
         }
-        
+
         let mut segments: Vec<&str> = vec![];
         let mut temporary_split: (&str, &str);
 
@@ -510,6 +510,8 @@ pub mod catplush_main {
                         parent_node.element.final_size_x = f32::max(current_node.element.final_size_x, parent_node.element.final_size_x)
                     }
                 }
+
+                current_node.element.final_size_x += current_node.element.layout.size_constraints.width.min as f32;
             } else {
                 current_node.element.final_size_y += (current_node.element.layout.padding.top + current_node.element.layout.padding.bottom) as f32;
 
@@ -530,6 +532,8 @@ pub mod catplush_main {
                         parent_node.element.final_size_y += current_node.element.final_size_y;
                     }
                 }
+
+                current_node.element.final_size_y += current_node.element.layout.size_constraints.height.min as f32;
             }
         }
 
@@ -599,6 +603,9 @@ pub mod catplush_main {
 
                         for child_index in &growable_elements {
                             let grow_elements_unevenly = self.layout_elements[*child_index].element.layout.grow_elements_unevenly;
+                            let max_size =
+                                if left_to_right { self.layout_elements[*child_index].element.layout.size_constraints.width.max }
+                                else { self.layout_elements[*child_index].element.layout.size_constraints.height.max } as f32;
                             let child_size =
                                 if left_to_right { &mut self.layout_elements[*child_index].element.final_size_x }
                                 else { &mut self.layout_elements[*child_index].element.final_size_y };
@@ -607,6 +614,10 @@ pub mod catplush_main {
                             // For some reason this check makes ONLY the smallest element grow (sort of) bleghhhh
                             if *child_size == smallest_size && !grow_elements_unevenly {
                                 *child_size += width_to_add;
+                                if *child_size >= max_size {
+                                    *child_size = max_size;
+
+                                }
                                 size_to_distribute -= *child_size - initial_size;
                             }
                         }
@@ -681,7 +692,6 @@ pub mod catplush_main {
             let character_width: f32;
             let line_height: f32;
             let text: String;
-            let new_lines: &[u32];
             let break_on_overflow: bool;
 
             match &mut self.layout_elements[current_index].element.object_type {
@@ -689,7 +699,6 @@ pub mod catplush_main {
                     character_width = text_data.bitmap.cell_size.x;
                     line_height = text_data.bitmap.cell_size.y;
                     text = text_data.text.clone();
-                    new_lines = &mut text_data.split_indices;
                     break_on_overflow = text_data.break_on_overflow
                 },
                 _ => { return }

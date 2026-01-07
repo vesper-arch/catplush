@@ -7,6 +7,7 @@ use image::ImageFormat;
 
 struct CardColor;
 
+#[allow(unused)]
 impl CardColor {
     pub const RED: ObjectColor = ObjectColor::from_u32_hex(0x91352eff);
     pub const GREEN: ObjectColor = ObjectColor::from_u32_hex(0x066a2dff);
@@ -242,7 +243,7 @@ fn main() {
 
                     ui.open_element(UiElement::new()
                         .sizing(SizingMode::Grow, SizingMode::Grow)
-                        .padding(Padding::all(20))
+                        .padding(Padding::all(10))
                         .child_gap(10)
                         .layout_direction(ChildLayoutDirection::TopToBottom));
 
