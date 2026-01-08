@@ -356,9 +356,8 @@ pub mod catplush_main {
                     panic!("Character {} in the string \"{}\" is not in the bitmap you provided, or the list of characters is missing some that are in the bitmap.", char, text);
                 }
             }
-            // The .map call gets only the indexes of the matches.
+            
             let new_lines: Vec<u32> = text.match_indices("\n").map(|x| x.0 as u32).collect();
-
             self.object_type = ObjectType::Text(CatplushTextData {
                 bitmap: bitmap.clone(),
                 text: text.to_string(),
