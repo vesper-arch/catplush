@@ -254,6 +254,7 @@ pub mod catplush_main {
         pub(crate) bitmap: BitmapConfiguration,
         pub(crate) text: String,
         pub(crate) font_size: u32,
+        pub(crate) line_height: f32,
         pub(crate) split_indices: Vec<u32>,
         pub(crate) break_on_overflow: bool
     }
@@ -341,7 +342,8 @@ pub mod catplush_main {
             self
         }
 
-        pub fn text(mut self, bitmap: &BitmapConfiguration, text_slice: &str, font_size: u32, break_on_overflow: bool) -> Self {
+        /// Line height is a multiplier to the font height, with the default spacing being 1.0
+        pub fn text(mut self, bitmap: &BitmapConfiguration, text_slice: &str, font_size: u32, line_height: f32) -> Self {
             let font_size_factor = font_size as f32 / bitmap.cell_size.y;
             let mut text = text_slice.to_owned();
 
@@ -364,9 +366,19 @@ pub mod catplush_main {
                 bitmap: bitmap.clone(),
                 text: text.to_string(),
                 font_size,
+                line_height,
                 split_indices: new_lines,
-                break_on_overflow
+                break_on_overflow: false
             });
+
+            self
+        }
+
+        /// Only works if used after configuring as a text element.
+        pub fn break_words_on_overflow(mut self) -> Self {
+            if let ObjectType::Text(ref mut text) = self.object_type {
+                text.break_on_overflow = true;
+            }
 
             self
         }
@@ -839,6 +851,7 @@ pub mod catplush_main {
                             bitmap: data.bitmap.clone(),
                             text: data.text.clone(),
                             font_size: data.font_size,
+                            line_height: data.line_height,
                             split_indices: data.split_indices.clone()
                         })
                     },
@@ -880,6 +893,7 @@ pub mod catplush_main {
         pub(crate) bitmap: BitmapConfiguration,
         pub(crate) text: String,
         pub(crate) font_size: u32,
+        pub(crate) line_height: f32,
         pub(crate) split_indices: Vec<u32>
     }
 
@@ -958,7 +972,15 @@ pub mod catplush_friend {
                     ));
                 },
                 RenderData::TextData(mut data) => {
-                    render_text(renderer, data.text, &mut data.split_indices, Vec2::new(render_command.bounding_box.x, render_command.bounding_box.y), data.bitmap, data.font_size);
+                    render_text(
+                        renderer,
+                        data.text,
+                        &mut data.split_indices,
+                        Vec2::new(render_command.bounding_box.x, render_command.bounding_box.y),
+                        data.bitmap,
+                        data.font_size,
+                        data.line_height
+                    );
                 }
             }
         }
@@ -966,12 +988,12 @@ pub mod catplush_friend {
         renderer.draw();
     }
 
-    pub(crate) fn render_text(renderer: &mut Renderer, text: String, split_indexes: &mut [u32], position: Vec2, bitmap: BitmapConfiguration, font_size: u32) {
+    pub(crate) fn render_text(renderer: &mut Renderer, text: String, split_indexes: &mut [u32], position: Vec2, bitmap: BitmapConfiguration, font_size: u32, line_height: f32) {
         split_indexes.sort();
         let actual_split_indexes: Vec<usize> = split_indexes.iter().map(|x| *x as usize).collect();
         let lines = split_multiple_indices(&text, &actual_split_indexes);
         for (i, line) in lines.iter().enumerate() {
-            let line_position = position.y + bitmap.cell_size.y * i as f32 + 1.0;
+            let line_position = position.y + (bitmap.cell_size.y * line_height) * i as f32 + 1.0;
 
             for (i, char) in line.chars().enumerate() {
                 let scale_factor = font_size as f32 / bitmap.cell_size.y;

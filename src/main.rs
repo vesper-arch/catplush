@@ -51,7 +51,7 @@ fn card_cell(ui: &mut CatplushContext, bitmap: &BitmapConfiguration, card_name: 
         ui.close_element();
 
         ui.open_element(UiElement::new()
-            .text(bitmap, card_name, 17, true));
+            .text(bitmap, card_name, 17, 1.2));
         ui.close_element();
 
     ui.close_element();
@@ -145,14 +145,14 @@ fn main() {
                     .border(MONOCHROME_HIGHLIGHT, BorderWidth::all(2)));
 
                     ui.open_element(UiElement::new()
-                        .text(&uiua_bitmap, "File", 16, true));
+                        .text(&uiua_bitmap, "File", 16, 1.2));
                     ui.close_element();
 
                 ui.close_element();
 
                 ui.open_element(topbar_button(75));
                     ui.open_element(UiElement::new()
-                        .text(&uiua_bitmap, "Edit", 16, true));
+                        .text(&uiua_bitmap, "Edit", 16, 1.2));
                     ui.close_element();
                 ui.close_element();
 
@@ -161,7 +161,7 @@ fn main() {
 
                 ui.open_element(topbar_button(75));
                     ui.open_element(UiElement::new()
-                        .text(&uiua_bitmap, "Close", 16, true));
+                        .text(&uiua_bitmap, "Close", 16, 1.2));
                     ui.close_element();
                 ui.close_element();
 
@@ -192,7 +192,7 @@ fn main() {
                         ui.close_element();
 
                         ui.open_element(UiElement::new()
-                            .text(&uiua_bitmap, "Cards", 22, true));
+                            .text(&uiua_bitmap, "Cards", 22, 1.2));
                         ui.close_element();
 
                     ui.close_element();
@@ -250,7 +250,7 @@ fn main() {
                         .layout_direction(ChildLayoutDirection::TopToBottom));
 
                         ui.open_element(UiElement::new()
-                            .text(&uiua_bitmap, "Panic Button: \nGain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.", 20, true));
+                            .text(&uiua_bitmap, "Panic Button: \nGain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.", 20, 1.8));
                         ui.close_element();
 
                     ui.close_element();
