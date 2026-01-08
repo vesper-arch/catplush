@@ -351,6 +351,11 @@ pub mod catplush_main {
 
             self = self.limit_width(0, ((bitmap.cell_size.x * font_size_factor) * text.len() as f32 - 1.0) as i32);
 
+            for char in text.chars() {
+                if bitmap.character_list.find(char).is_none() {
+                    panic!("Character {} in the string \"{}\" is not in the bitmap you provided, or the list of characters is missing some that are in the bitmap.", char, text);
+                }
+            }
             // The .map call gets only the indexes of the matches.
             let new_lines: Vec<u32> = text.match_indices("\n").map(|x| x.0 as u32).collect();
 
@@ -491,6 +496,7 @@ pub mod catplush_main {
 
             // Padding
             if left_to_right {
+                current_node.element.final_size_x += current_node.element.layout.size_constraints.width.min as f32;
                 current_node.element.final_size_x += (current_node.element.layout.padding.left + current_node.element.layout.padding.right) as f32;
 
                 if current_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
@@ -510,9 +516,8 @@ pub mod catplush_main {
                         parent_node.element.final_size_x = f32::max(current_node.element.final_size_x, parent_node.element.final_size_x)
                     }
                 }
-
-                current_node.element.final_size_x += current_node.element.layout.size_constraints.width.min as f32;
             } else {
+                current_node.element.final_size_y += current_node.element.layout.size_constraints.height.min as f32;
                 current_node.element.final_size_y += (current_node.element.layout.padding.top + current_node.element.layout.padding.bottom) as f32;
 
                 if current_node.element.layout.layout_direction == ChildLayoutDirection::TopToBottom {
@@ -532,8 +537,6 @@ pub mod catplush_main {
                         parent_node.element.final_size_y += current_node.element.final_size_y;
                     }
                 }
-
-                current_node.element.final_size_y += current_node.element.layout.size_constraints.height.min as f32;
             }
         }
 
@@ -576,10 +579,10 @@ pub mod catplush_main {
                     // I apologize for this closure.
                     growable_elements.retain(
                         |&x|
-                        left_to_right && self.layout_elements[x].element.final_size_x <= self.layout_elements[x].element.layout.size_constraints.width.max as f32
+                        left_to_right && self.layout_elements[x].element.final_size_x < self.layout_elements[x].element.layout.size_constraints.width.max as f32
                         && self.layout_elements[x].element.layout.sizing.width == SizingMode::Grow
                         ||
-                        !left_to_right && self.layout_elements[x].element.final_size_y <= self.layout_elements[x].element.layout.size_constraints.height.max as f32
+                        !left_to_right && self.layout_elements[x].element.final_size_y < self.layout_elements[x].element.layout.size_constraints.height.max as f32
                         && self.layout_elements[x].element.layout.sizing.height == SizingMode::Grow
                     );
 
@@ -618,10 +621,10 @@ pub mod catplush_main {
                             // For some reason this check makes ONLY the smallest element grow (sort of) bleghhhh
                             if *child_size == smallest_size && !grow_elements_unevenly {
                                 *child_size += width_to_add;
+                                size_to_distribute -= *child_size - initial_size;
                                 if *child_size >= max_size {
                                     *child_size = max_size;
                                 }
-                                size_to_distribute -= *child_size - initial_size;
                             }
                         }
                     }
@@ -950,8 +953,8 @@ pub mod catplush_friend {
                         NativeTexture(data.texture_id)
                     ));
                 },
-                RenderData::TextData(data) => {
-                    render_text(renderer, data.text, &data.split_indices, Vec2::new(render_command.bounding_box.x, render_command.bounding_box.y), data.bitmap, data.font_size);
+                RenderData::TextData(mut data) => {
+                    render_text(renderer, data.text, &mut data.split_indices, Vec2::new(render_command.bounding_box.x, render_command.bounding_box.y), data.bitmap, data.font_size);
                 }
             }
         }
@@ -959,13 +962,15 @@ pub mod catplush_friend {
         renderer.draw();
     }
 
-    pub(crate) fn render_text(renderer: &mut Renderer, text: String, split_indexes: &[u32], position: Vec2, bitmap: BitmapConfiguration, font_size: u32) {
+    pub(crate) fn render_text(renderer: &mut Renderer, text: String, split_indexes: &mut [u32], position: Vec2, bitmap: BitmapConfiguration, font_size: u32) {
+        split_indexes.sort();
         let actual_split_indexes: Vec<usize> = split_indexes.iter().map(|x| *x as usize).collect();
         let lines = split_multiple_indices(&text, &actual_split_indexes);
         for line in lines {
             for (i, char) in line.chars().enumerate() {
                 let scale_factor = font_size as f32 / bitmap.cell_size.y;
                 let index_in_bitmap = bitmap.character_list.find(char).unwrap() as i32;
+
                 let uv_cell_size = bitmap.cell_size / bitmap.texture_size;
                 let x = (index_in_bitmap % bitmap.characters_per_row as i32) as f32 * uv_cell_size.x;
                 let y = (index_in_bitmap / bitmap.characters_per_row as i32) as f32 * uv_cell_size.y;
