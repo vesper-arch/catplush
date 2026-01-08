@@ -341,8 +341,9 @@ pub mod catplush_main {
             self
         }
 
-        pub fn text(mut self, bitmap: &BitmapConfiguration, text: &str, font_size: u32, break_on_overflow: bool) -> Self {
+        pub fn text(mut self, bitmap: &BitmapConfiguration, text_slice: &str, font_size: u32, break_on_overflow: bool) -> Self {
             let font_size_factor = font_size as f32 / bitmap.cell_size.y;
+            let mut text = text_slice.to_owned();
 
             self.layout.sizing = Sizing {
                 width: SizingMode::Fixed(((bitmap.cell_size.x * font_size_factor) * text.len() as f32 - 1.0) as i32),
@@ -351,13 +352,14 @@ pub mod catplush_main {
 
             self = self.limit_width(0, ((bitmap.cell_size.x * font_size_factor) * text.len() as f32 - 1.0) as i32);
 
+            let new_lines: Vec<u32> = text.match_indices("\n").map(|x| x.0 as u32).collect();
+            text = text.replace("\n", "");
+
             for char in text.chars() {
                 if bitmap.character_list.find(char).is_none() {
                     panic!("Character {} in the string \"{}\" is not in the bitmap you provided, or the list of characters is missing some that are in the bitmap.", char, text);
                 }
             }
-            
-            let new_lines: Vec<u32> = text.match_indices("\n").map(|x| x.0 as u32).collect();
             self.object_type = ObjectType::Text(CatplushTextData {
                 bitmap: bitmap.clone(),
                 text: text.to_string(),
@@ -907,6 +909,9 @@ pub mod catplush_main {
     }
 
     #[derive(Clone)]
+    /// The character list is what actually tells the code how to find each character in the image.
+    /// If any characters are missing, or some are included that are not in the bitmap, weird things(and crashes)
+    /// will happen.
     pub struct BitmapConfiguration {
         pub texture: NonZeroU32,
         pub texture_size: Vec2,
@@ -965,7 +970,9 @@ pub mod catplush_friend {
         split_indexes.sort();
         let actual_split_indexes: Vec<usize> = split_indexes.iter().map(|x| *x as usize).collect();
         let lines = split_multiple_indices(&text, &actual_split_indexes);
-        for line in lines {
+        for (i, line) in lines.iter().enumerate() {
+            let line_position = position.y + bitmap.cell_size.y * i as f32 + 1.0;
+
             for (i, char) in line.chars().enumerate() {
                 let scale_factor = font_size as f32 / bitmap.cell_size.y;
                 let index_in_bitmap = bitmap.character_list.find(char).unwrap() as i32;
@@ -976,7 +983,7 @@ pub mod catplush_friend {
 
                 renderer.push_draw_command(DrawCommand::TextureQuad(
                     Quad {
-                        pos: Vec2::new(position.x + ((i as f32 * bitmap.cell_size.x) * scale_factor), position.y),
+                        pos: Vec2::new(position.x + ((i as f32 * bitmap.cell_size.x) * scale_factor), line_position),
                         size: bitmap.cell_size * scale_factor,
                         origin: Vec2::ZERO,
                         uv_pos: Vec2::new(x, y),

@@ -250,11 +250,7 @@ fn main() {
                         .layout_direction(ChildLayoutDirection::TopToBottom));
 
                         ui.open_element(UiElement::new()
-                            .text(&uiua_bitmap, "Panic Button", 22, true));
-                        ui.close_element();
-
-                        ui.open_element(UiElement::new()
-                            .text(&uiua_bitmap, "Gain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.", 20, true));
+                            .text(&uiua_bitmap, "Panic Button: \nGain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.", 20, true));
                         ui.close_element();
 
                     ui.close_element();
