@@ -347,6 +347,8 @@ pub mod catplush_main {
             let font_size_factor = font_size as f32 / bitmap.cell_size.y;
             let mut text = text_slice.to_owned();
 
+            let new_lines: Vec<u32> = text.match_indices("\n").map(|x| x.0 as u32).collect();
+
             self.layout.sizing = Sizing {
                 width: SizingMode::Fixed(((bitmap.cell_size.x * font_size_factor) * text.len() as f32 - 1.0) as i32),
                 height: SizingMode::Fixed((bitmap.cell_size.y * font_size_factor) as i32)
@@ -354,7 +356,6 @@ pub mod catplush_main {
 
             self = self.limit_width(0, ((bitmap.cell_size.x * font_size_factor) * text.len() as f32 - 1.0) as i32);
 
-            let new_lines: Vec<u32> = text.match_indices("\n").map(|x| x.0 as u32).collect();
             text = text.replace("\n", "");
 
             for char in text.chars() {
@@ -439,7 +440,7 @@ pub mod catplush_main {
         // }
     }
 
-    pub fn split_multiple_indices<'a>(text: &'a str, indices_to_split: &[usize]) -> Vec<&'a str> {
+    pub fn split_multiple_indices<'a>(text: &'a str, indices_to_split: &[u32]) -> Vec<&'a str> {
         if indices_to_split.is_empty() {
             return vec![text]
         }
@@ -448,7 +449,7 @@ pub mod catplush_main {
         let mut temporary_split: (&str, &str);
 
         for (index, split) in indices_to_split.iter().enumerate() {
-            temporary_split = text.split_at(*split);
+            temporary_split = text.split_at(*split as usize);
 
             if index == 0 {
                 segments.push(temporary_split.0);
@@ -990,8 +991,7 @@ pub mod catplush_friend {
 
     pub(crate) fn render_text(renderer: &mut Renderer, text: String, split_indexes: &mut [u32], position: Vec2, bitmap: BitmapConfiguration, font_size: u32, line_height: f32) {
         split_indexes.sort();
-        let actual_split_indexes: Vec<usize> = split_indexes.iter().map(|x| *x as usize).collect();
-        let lines = split_multiple_indices(&text, &actual_split_indexes);
+        let lines = split_multiple_indices(&text, split_indexes);
         for (i, line) in lines.iter().enumerate() {
             let line_position = position.y + (bitmap.cell_size.y * line_height) * i as f32 + 1.0;
 
