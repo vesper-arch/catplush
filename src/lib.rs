@@ -342,7 +342,7 @@ pub mod catplush_main {
             self
         }
 
-        /// Line height is a multiplier to the font height, with the default spacing being 1.0
+        /// Line height is a multiplier to the font height, with the normal font height being at 1.0
         pub fn text(mut self, bitmap: &BitmapConfiguration, text_slice: &str, font_size: u32, line_height: f32) -> Self {
             let font_size_factor = font_size as f32 / bitmap.cell_size.y;
             let mut text = text_slice.to_owned();
