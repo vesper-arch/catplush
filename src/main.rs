@@ -38,7 +38,7 @@ fn card_cell(ui: &mut CatplushContext, bitmap: &BitmapConfiguration, card_name: 
     ui.open_element(UiElement::new()
         .rectangle(card_color, CornerRadius::all(10.0))
         .sizing(SizingMode::Grow, SizingMode::Fixed(40))
-        .limit_width(50, 400)
+        .limit_width(300, 400)
         .padding(Padding::new(10, 15, 5, 5))
         .alignment(ChildXAlignment::Left, ChildYAlignment::Center)
         .child_gap(5));
@@ -249,9 +249,9 @@ fn main() {
                         .child_gap(10)
                         .layout_direction(ChildLayoutDirection::TopToBottom));
 
-                        ui.open_element(UiElement::new()
-                            .text(&uiua_bitmap, "Panic Button: \nGain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.", 20, 1.2));
-                        ui.close_element();
+                        // ui.open_element(UiElement::new()
+                        //     .text(&uiua_bitmap, "Panic Button: \nGain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.", 20, 1.2));
+                        // ui.close_element();
 
                     ui.close_element();
 

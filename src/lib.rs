@@ -510,7 +510,6 @@ pub mod catplush_main {
 
             // Padding
             if left_to_right {
-                current_node.element.final_size_x += current_node.element.layout.size_constraints.width.min as f32;
                 current_node.element.final_size_x += (current_node.element.layout.padding.left + current_node.element.layout.padding.right) as f32;
 
                 if current_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
@@ -530,8 +529,9 @@ pub mod catplush_main {
                         parent_node.element.final_size_x = f32::max(current_node.element.final_size_x, parent_node.element.final_size_x)
                     }
                 }
+
+                current_node.element.final_size_x = f32::max(current_node.element.final_size_x, current_node.element.layout.size_constraints.width.min as f32);
             } else {
-                current_node.element.final_size_y += current_node.element.layout.size_constraints.height.min as f32;
                 current_node.element.final_size_y += (current_node.element.layout.padding.top + current_node.element.layout.padding.bottom) as f32;
 
                 if current_node.element.layout.layout_direction == ChildLayoutDirection::TopToBottom {
@@ -551,6 +551,8 @@ pub mod catplush_main {
                         parent_node.element.final_size_y += current_node.element.final_size_y;
                     }
                 }
+
+                current_node.element.final_size_y = f32::max(current_node.element.final_size_y, current_node.element.layout.size_constraints.height.min as f32);
             }
         }
 
@@ -593,10 +595,10 @@ pub mod catplush_main {
                     // I apologize for this closure.
                     growable_elements.retain(
                         |&x|
-                        left_to_right && self.layout_elements[x].element.final_size_x < self.layout_elements[x].element.layout.size_constraints.width.max as f32
+                        left_to_right && self.layout_elements[x].element.final_size_x <= self.layout_elements[x].element.layout.size_constraints.width.max as f32
                         && self.layout_elements[x].element.layout.sizing.width == SizingMode::Grow
                         ||
-                        !left_to_right && self.layout_elements[x].element.final_size_y < self.layout_elements[x].element.layout.size_constraints.height.max as f32
+                        !left_to_right && self.layout_elements[x].element.final_size_y <= self.layout_elements[x].element.layout.size_constraints.height.max as f32
                         && self.layout_elements[x].element.layout.sizing.height == SizingMode::Grow
                     );
 
