@@ -522,6 +522,8 @@ pub mod catplush_main {
                     SizingMode::Grow => {},
                 }
 
+                current_node.element.final_size_x = f32::max(current_node.element.final_size_x, current_node.element.layout.size_constraints.width.min as f32);
+
                 if parent_node.element.layout.sizing.width == SizingMode::Fit || parent_node.element.layout.sizing.width == SizingMode::Grow {
                     if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
                         parent_node.element.final_size_x += current_node.element.final_size_x;
@@ -529,8 +531,6 @@ pub mod catplush_main {
                         parent_node.element.final_size_x = f32::max(current_node.element.final_size_x, parent_node.element.final_size_x)
                     }
                 }
-
-                current_node.element.final_size_x = f32::max(current_node.element.final_size_x, current_node.element.layout.size_constraints.width.min as f32);
             } else {
                 current_node.element.final_size_y += (current_node.element.layout.padding.top + current_node.element.layout.padding.bottom) as f32;
 
@@ -544,6 +544,8 @@ pub mod catplush_main {
                     SizingMode::Grow => {},
                 }
 
+                current_node.element.final_size_y = f32::max(current_node.element.final_size_y, current_node.element.layout.size_constraints.height.min as f32);
+
                 if parent_node.element.layout.sizing.height == SizingMode::Fit || parent_node.element.layout.sizing.height == SizingMode::Grow {
                     if parent_node.element.layout.layout_direction == ChildLayoutDirection::LeftToRight {
                         parent_node.element.final_size_y = f32::max(current_node.element.final_size_y, parent_node.element.final_size_y)
@@ -551,8 +553,6 @@ pub mod catplush_main {
                         parent_node.element.final_size_y += current_node.element.final_size_y;
                     }
                 }
-
-                current_node.element.final_size_y = f32::max(current_node.element.final_size_y, current_node.element.layout.size_constraints.height.min as f32);
             }
         }
 
