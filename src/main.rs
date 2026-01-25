@@ -38,7 +38,6 @@ fn card_cell(ui: &mut CatplushContext, bitmap: &BitmapConfiguration, card_name: 
     ui.open_element(UiElement::new()
         .rectangle(card_color, CornerRadius::all(10.0))
         .sizing(SizingMode::Grow, SizingMode::Fixed(40))
-        .limit_width(300, 400)
         .padding(Padding::new(10, 15, 5, 5))
         .alignment(ChildXAlignment::Left, ChildYAlignment::Center)
         .child_gap(5));
@@ -214,32 +213,28 @@ fn main() {
 
                     ui.open_element(UiElement::new()
                         .sizing(SizingMode::Grow, SizingMode::Fit)
-                        .alignment(ChildXAlignment::Right, ChildYAlignment::Center)
+                        .alignment(ChildXAlignment::Left, ChildYAlignment::Center)
                         .child_gap(10));
 
                         card_cell(&mut ui, &uiua_bitmap, "Alpha", watcher_rare_skill_image, CardColor::PURPLE);
                         card_cell(&mut ui, &uiua_bitmap, "Blasphemy", watcher_rare_skill_image, CardColor::PURPLE);
-                        card_cell(&mut ui, &uiua_bitmap, "Conjure Blade", watcher_rare_skill_image, CardColor::PURPLE);
 
-                        // card_cell(&mut ui, &uiua_bitmap, "Combust", ironclad_uncommon_power_image, CardColor::RED);
-                        // card_cell(&mut ui, &uiua_bitmap, "Evolve", ironclad_uncommon_power_image, CardColor::RED);
-                        // card_cell(&mut ui, &uiua_bitmap, "Feel No Pain", ironclad_uncommon_power_image, CardColor::RED);
+                        card_cell(&mut ui, &uiua_bitmap, "Combust", ironclad_uncommon_power_image, CardColor::RED);
+                        card_cell(&mut ui, &uiua_bitmap, "Evolve", ironclad_uncommon_power_image, CardColor::RED);
 
                     ui.close_element();
 
                     ui.open_element(UiElement::new()
                         .sizing(SizingMode::Grow, SizingMode::Fit)
-                        .alignment(ChildXAlignment::Right, ChildYAlignment::Center)
+                        .alignment(ChildXAlignment::Left, ChildYAlignment::Center)
                         .grow_elements_unevenly()
                         .child_gap(10));
 
                         card_cell(&mut ui, &uiua_bitmap, "Bane", silent_common_attack_image, CardColor::GREEN);
                         card_cell(&mut ui, &uiua_bitmap, "Dagger Spray", silent_common_attack_image, CardColor::GREEN);
-                        card_cell(&mut ui, &uiua_bitmap, "Poisoned Stab", silent_common_attack_image, CardColor::GREEN);
 
-                        // card_cell(&mut ui, &uiua_bitmap, "Thunder Strike", defect_rare_attack_image, CardColor::BLUE);
-                        // card_cell(&mut ui, &uiua_bitmap, "Hyperbeam", defect_rare_attack_image, CardColor::BLUE);
-                        // card_cell(&mut ui, &uiua_bitmap, "All for One", defect_rare_attack_image, CardColor::BLUE);
+                        card_cell(&mut ui, &uiua_bitmap, "Thunder Strike", defect_rare_attack_image, CardColor::BLUE);
+                        card_cell(&mut ui, &uiua_bitmap, "Hyperbeam", defect_rare_attack_image, CardColor::BLUE);
 
                     ui.close_element();
 
@@ -249,9 +244,9 @@ fn main() {
                         .child_gap(10)
                         .layout_direction(ChildLayoutDirection::TopToBottom));
 
-                        // ui.open_element(UiElement::new()
-                        //     .text(&uiua_bitmap, "Panic Button: \nGain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.", 20, 1.2));
-                        // ui.close_element();
+                        ui.open_element(UiElement::new()
+                            .text(&uiua_bitmap, "Panic Button:\nGain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.", 20, 1.2));
+                        ui.close_element();
 
                     ui.close_element();
 

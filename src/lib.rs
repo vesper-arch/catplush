@@ -349,13 +349,6 @@ pub mod catplush_main {
 
             let new_lines: Vec<u32> = text.match_indices("\n").map(|x| x.0 as u32).collect();
 
-            self.layout.sizing = Sizing {
-                width: SizingMode::Fixed(((bitmap.cell_size.x * font_size_factor) * text.len() as f32 - 1.0) as i32),
-                height: SizingMode::Fixed((bitmap.cell_size.y * font_size_factor) as i32)
-            };
-
-            self = self.limit_width(0, ((bitmap.cell_size.x * font_size_factor) * text.len() as f32 - 1.0) as i32);
-
             text = text.replace("\n", "");
 
             for char in text.chars() {
@@ -363,6 +356,16 @@ pub mod catplush_main {
                     panic!("Character {} in the string \"{}\" is not in the bitmap you provided, or the list of characters is missing some that are in the bitmap.", char, text);
                 }
             }
+
+            let longest_line = if !new_lines.is_empty() { find_largest_split(&new_lines, text.len() as u32) } else { text.len() as u32 };
+
+            let width = ((bitmap.cell_size.x * font_size_factor) * (longest_line as f32)) as i32;
+            let height = ((bitmap.cell_size.y * font_size_factor) * (new_lines.len() as f32 + 1.0)) as i32;
+
+            self.layout.sizing = Sizing { width: SizingMode::Fixed(width), height: SizingMode::Fixed(height) };
+
+            self = self.limit_width(0, width);
+
             self.object_type = ObjectType::Text(CatplushTextData {
                 bitmap: bitmap.clone(),
                 text: text.to_string(),
@@ -458,6 +461,18 @@ pub mod catplush_main {
         }
 
         segments
+    }
+
+    pub fn find_largest_split(splits: &[u32], text_length: u32) -> u32 {
+        let mut largest_split = 0;
+        let all_splits: Vec<u32> = [&[0], splits, &[text_length]].concat();
+        for (i, _) in all_splits.iter().enumerate() {
+            if i < all_splits.len() - 1 {
+                largest_split = u32::max(largest_split, u32::abs_diff(all_splits[i], all_splits[i+1]));
+            }
+        }
+
+        largest_split
     }
 
     impl CatplushContext {
@@ -588,7 +603,6 @@ pub mod catplush_main {
 
             if sizing_along_axis {
                 let mut size_to_distribute = parent_size - padding as f32 - child_gap as f32 - inner_content_size;
-
 
                 if size_to_distribute > 0.0 && !growable_elements.is_empty() {
                     // If the element is able to grow and is not at its max size, keep growing it.
