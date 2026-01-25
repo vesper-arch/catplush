@@ -219,8 +219,8 @@ fn main() {
                         card_cell(&mut ui, &uiua_bitmap, "Alpha", watcher_rare_skill_image, CardColor::PURPLE);
                         card_cell(&mut ui, &uiua_bitmap, "Blasphemy", watcher_rare_skill_image, CardColor::PURPLE);
 
-                        card_cell(&mut ui, &uiua_bitmap, "Combust", ironclad_uncommon_power_image, CardColor::RED);
-                        card_cell(&mut ui, &uiua_bitmap, "Evolve", ironclad_uncommon_power_image, CardColor::RED);
+                        // card_cell(&mut ui, &uiua_bitmap, "Combust", ironclad_uncommon_power_image, CardColor::RED);
+                        // card_cell(&mut ui, &uiua_bitmap, "Evolve", ironclad_uncommon_power_image, CardColor::RED);
 
                     ui.close_element();
 
@@ -233,8 +233,8 @@ fn main() {
                         card_cell(&mut ui, &uiua_bitmap, "Bane", silent_common_attack_image, CardColor::GREEN);
                         card_cell(&mut ui, &uiua_bitmap, "Dagger Spray", silent_common_attack_image, CardColor::GREEN);
 
-                        card_cell(&mut ui, &uiua_bitmap, "Thunder Strike", defect_rare_attack_image, CardColor::BLUE);
-                        card_cell(&mut ui, &uiua_bitmap, "Hyperbeam", defect_rare_attack_image, CardColor::BLUE);
+                        // card_cell(&mut ui, &uiua_bitmap, "Thunder Strike", defect_rare_attack_image, CardColor::BLUE);
+                        // card_cell(&mut ui, &uiua_bitmap, "Hyperbeam", defect_rare_attack_image, CardColor::BLUE);
 
                     ui.close_element();
 
@@ -245,7 +245,13 @@ fn main() {
                         .layout_direction(ChildLayoutDirection::TopToBottom));
 
                         ui.open_element(UiElement::new()
-                            .text(&uiua_bitmap, "Panic Button:\nGain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.", 20, 1.2));
+                            .rectangle(ObjectColor(255, 255, 255, 122), CornerRadius::all(5.0))
+                            .sizing(SizingMode::Grow, SizingMode::Fit));
+
+                            ui.open_element(UiElement::new()
+                                .text(&uiua_bitmap, "Panic Button: \nGain 30 Block. \nYou cannot gain Block from cards for 2 turns. \nExhaust.", 20, 1.2));
+                            ui.close_element();
+
                         ui.close_element();
 
                     ui.close_element();

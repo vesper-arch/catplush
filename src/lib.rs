@@ -347,9 +347,14 @@ pub mod catplush_main {
             let font_size_factor = font_size as f32 / bitmap.cell_size.y;
             let mut text = text_slice.to_owned();
 
-            let new_lines: Vec<u32> = text.match_indices("\n").map(|x| x.0 as u32).collect();
+            let mut new_lines: Vec<u32> = text.match_indices("\n").map(|x| x.0 as u32).collect();
 
             text = text.replace("\n", "");
+
+            // Correct for the new line characters being removed
+            for (index, new_line) in new_lines.iter_mut().enumerate() {
+                *new_line -= index as u32;
+            }
 
             for char in text.chars() {
                 if bitmap.character_list.find(char).is_none() {
@@ -360,7 +365,7 @@ pub mod catplush_main {
             let longest_line = if !new_lines.is_empty() { find_largest_split(&new_lines, text.len() as u32) } else { text.len() as u32 };
 
             let width = ((bitmap.cell_size.x * font_size_factor) * (longest_line as f32)) as i32;
-            let height = ((bitmap.cell_size.y * font_size_factor) * (new_lines.len() as f32 + 1.0)) as i32;
+            let height = (((bitmap.cell_size.y * font_size_factor) * line_height) * (new_lines.len() as f32 + 1.0)) as i32;
 
             self.layout.sizing = Sizing { width: SizingMode::Fixed(width), height: SizingMode::Fixed(height) };
 
@@ -450,14 +455,20 @@ pub mod catplush_main {
 
         let mut segments: Vec<&str> = vec![];
         let mut temporary_split: (&str, &str);
+        let mut current_split: &str = text;
 
         for (index, split) in indices_to_split.iter().enumerate() {
-            temporary_split = text.split_at(*split as usize);
-
             if index == 0 {
-                segments.push(temporary_split.0);
+                temporary_split = current_split.split_at(*split as usize);
+            } else {
+                temporary_split = current_split.split_at((*split - indices_to_split[index - 1]) as usize);
             }
-            segments.push(temporary_split.1);
+
+            segments.push(temporary_split.0);
+            if index == indices_to_split.len() - 1 {
+                segments.push(temporary_split.1)
+            }
+            current_split = temporary_split.1;
         }
 
         segments
@@ -466,6 +477,7 @@ pub mod catplush_main {
     pub fn find_largest_split(splits: &[u32], text_length: u32) -> u32 {
         let mut largest_split = 0;
         let all_splits: Vec<u32> = [&[0], splits, &[text_length]].concat();
+
         for (i, _) in all_splits.iter().enumerate() {
             if i < all_splits.len() - 1 {
                 largest_split = u32::max(largest_split, u32::abs_diff(all_splits[i], all_splits[i+1]));
