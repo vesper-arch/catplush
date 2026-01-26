@@ -364,8 +364,8 @@ pub mod catplush_main {
 
             let longest_line = if !new_lines.is_empty() { find_largest_split(&new_lines, text.len() as u32) } else { text.len() as u32 };
 
-            let width = ((bitmap.cell_size.x * font_size_factor) * (longest_line as f32)) as i32;
-            let height = (((bitmap.cell_size.y * font_size_factor) * line_height) * (new_lines.len() as f32 + 1.0)) as i32;
+            let width = (bitmap.cell_size.x * font_size_factor * longest_line as f32) as i32;
+            let height = (bitmap.cell_size.y * (new_lines.len() as f32 + 1.0) * line_height * font_size_factor) as i32;
 
             self.layout.sizing = Sizing { width: SizingMode::Fixed(width), height: SizingMode::Fixed(height) };
 
@@ -707,8 +707,9 @@ pub mod catplush_main {
 
             match &mut self.layout_elements[current_index].element.object_type {
                 ObjectType::Text(text_data) => {
-                    character_width = text_data.bitmap.cell_size.x;
-                    line_height = text_data.bitmap.cell_size.y;
+                    let font_size_factor = text_data.font_size as f32 / text_data.bitmap.cell_size.y;
+                    character_width = text_data.bitmap.cell_size.x * font_size_factor;
+                    line_height = text_data.bitmap.cell_size.y * font_size_factor * text_data.line_height;
                     text = text_data.text.clone();
                     break_on_overflow = text_data.break_on_overflow
                 },

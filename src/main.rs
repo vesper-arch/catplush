@@ -246,10 +246,10 @@ fn main() {
 
                         ui.open_element(UiElement::new()
                             .rectangle(ObjectColor(255, 255, 255, 122), CornerRadius::all(5.0))
-                            .sizing(SizingMode::Grow, SizingMode::Fit));
+                            .sizing(SizingMode::Fit, SizingMode::Fit));
 
                             ui.open_element(UiElement::new()
-                                .text(&uiua_bitmap, "Panic Button: \nGain 30 Block. \nYou cannot gain Block from cards for 2 turns. \nExhaust.", 20, 1.2));
+                                .text(&uiua_bitmap, "Panic Button:\nGain 30 Block.\nYou cannot gain Block from cards for 2 turns.\nExhaust.", 20, 1.2));
                             ui.close_element();
 
                         ui.close_element();
